@@ -29,9 +29,83 @@ import org.junit.Test;
  */
 public interface TransactionHelperTest {
 
-    /**
-     * Testing the transactions.
-     */
+    // 13.
+    // @Test
+    void test13();
+
+    // 14.
+    // @Test
+    void test14();
+
+    // 15.
+    // @Test
+    void test15();
+
+    // 16.
+    // @Test
+    void test16();
+
+    // 17.
+    // @Test
+    void test17();
+
+    // 18.
+    // @Test
+    void test18();
+
+    // 19.
+    // @Test
+    void test19();
+
+    // 20.
     @Test
-    void testSuccessTransaction();
+    void test20();
+
+    // 11.
+    // @Test
+    void testExistTransactionNotRequiresNewTransactionInsideGetZeroCBWithFalse();
+
+    // 10.
+    // @Test
+    void testExistTransactionNotRequiresNewTransactionInsideGetZeroCBWithTrue();
+
+    // 12.
+    // @Test
+    void testExistTransactionNotRequiresNewTransactionInsideIllegalArgumentExceptionCBWithFalse();
+
+    // 9.
+    // @Test
+    void testExistTransactionNotRequiresNewTransactionInsideIllegalArgumentExceptionCBWithTrue();
+
+    // 7.
+    // @Test
+    void testExistTransactionRequiresNewTransactionInsideGetZeroCBWithFalse();
+
+    // 6.
+    // @Test
+    void testExistTransactionRequiresNewTransactionInsideGetZeroCBWithTrue();
+
+    // 8.
+    // @Test
+    void testExistTransactionRequiresNewTransactionInsideIllegalArgumentExceptionCBWithFalse();
+
+    // 5.
+    // @Test
+    void testExistTransactionRequiresNewTransactionInsideIllegalArgumentExceptionCBWithTrue();
+
+    // 4.
+    // @Test
+    void testNoTransactionNotRequiresNewTransactionGetZeroCB();
+
+    // 3.
+    // @Test
+    void testNoTransactionNotRequiresNewTransactionIllegalArgumentExceptionCB();
+
+    // 2.
+    // @Test
+    void testNoTransactionRequiresNewTransactionGetZeroCB();
+
+    // 1.
+    // @Test
+    void testNoTransactionRequiresNewTransactionIllegalArgumentExceptionCB();
 }

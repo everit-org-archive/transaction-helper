@@ -21,13 +21,7 @@ package org.everit.osgi.transaction.helper.tests;
  * MA 02110-1301  USA
  */
 
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.NotSupportedException;
-import javax.transaction.RollbackException;
 import javax.transaction.Status;
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
 import junit.framework.Assert;
@@ -35,6 +29,7 @@ import junit.framework.Assert;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
+import org.apache.felix.scr.annotations.ReferencePolicy;
 import org.apache.felix.scr.annotations.Service;
 import org.everit.osgi.transaction.helper.component.api.Callback;
 import org.everit.osgi.transaction.helper.component.api.TransactionHelper;
@@ -50,25 +45,19 @@ public class TransactionHelperTestImpl implements TransactionHelperTest {
     /**
      * The {@link TransactionHelper} instance.
      */
-    @Reference(bind = "setTransactionHelper", unbind = "unSetTransactionHelper")
+    @Reference(bind = "setTransactionHelper", policy = ReferencePolicy.STATIC)
     private TransactionHelper transactionHelper;
 
     /**
      * The {@link TransactionSynchronizationRegistry} instance.
      */
-    @Reference(bind = "setTransactionSynchronizationRegistry", unbind = "unSetTransactionSynchronizationRegistry")
+    @Reference(bind = "setTransactionSynchronizationRegistry", policy = ReferencePolicy.STATIC)
     private TransactionSynchronizationRegistry transactionSynchronizationRegistry;
-
-    /**
-     * The {@link TransactionManager} instance.
-     */
-    @Reference(bind = "setTransactionManager", unbind = "unSetTransactionManager")
-    private TransactionManager transactionManager;
 
     /**
      * The basic Callback transaction which throw new RuntimeException.
      */
-    private static final Callback<Void> RUNTIMEEXCEPTION_CB = new Callback<Void>() {
+    private final Callback<Void> cbIllegalArgumentException = new Callback<Void>() {
 
         @Override
         public Void execute() {
@@ -77,118 +66,19 @@ public class TransactionHelperTestImpl implements TransactionHelperTest {
     };
 
     /**
-     * The basis transactions when exist active transaction.
+     * The basic CallBack transaction which getting the zero number.
      */
-    private void basicTransActionWhenExistActiveTransaction() {
-        final int b = 2;
-        final Callback<Integer> szumCB = new Callback<Integer>() {
+    private final Callback<Integer> cbGetZero = new Callback<Integer>() {
 
-            @Override
-            public Integer execute() {
-                int a = 0;
-                Assert.assertEquals(Status.STATUS_ACTIVE, transactionSynchronizationRegistry.getTransactionStatus());
-                return a + b;
-            }
-        };
-
-        try {
-            transactionManager.begin();
-        } catch (NotSupportedException e) {
-            Assert.assertNull(e);
-        } catch (SystemException e) {
-            Assert.assertNull(e);
+        @Override
+        public Integer execute() {
+            Assert.assertEquals(Status.STATUS_ACTIVE, transactionSynchronizationRegistry.getTransactionStatus());
+            return 0;
         }
-
-        Assert.assertEquals(Status.STATUS_ACTIVE, transactionSynchronizationRegistry.getTransactionStatus());
-        Integer sum = transactionHelper.doInTransaction(szumCB, true);
-        Assert.assertEquals(Status.STATUS_ACTIVE, transactionSynchronizationRegistry.getTransactionStatus());
-        Assert.assertEquals(Integer.valueOf(2), sum);
-
-        try {
-            transactionHelper.doInTransaction(RUNTIMEEXCEPTION_CB, true);
-            Assert.fail("expect runtimeexception");
-        } catch (RuntimeException e) {
-            Assert.assertNotNull(e);
-        }
-        Assert.assertEquals(Status.STATUS_ACTIVE, transactionSynchronizationRegistry.getTransactionStatus());
-
-        sum = transactionHelper.doInTransaction(szumCB, false);
-        Assert.assertEquals(Status.STATUS_ACTIVE, transactionSynchronizationRegistry.getTransactionStatus());
-        Assert.assertEquals(Integer.valueOf(2), sum);
-        Assert.assertEquals(Status.STATUS_ACTIVE, transactionSynchronizationRegistry.getTransactionStatus());
-
-        try {
-            transactionHelper.doInTransaction(RUNTIMEEXCEPTION_CB, false);
-            Assert.fail("expect runtimeexception");
-        } catch (RuntimeException e) {
-            Assert.assertNotNull(e);
-        }
-        Assert.assertEquals(Status.STATUS_ACTIVE, transactionSynchronizationRegistry.getTransactionStatus());
-
-        try {
-            transactionManager.commit();
-        } catch (IllegalStateException e) {
-            Assert.assertNull(e);
-        } catch (SecurityException e) {
-            Assert.assertNull(e);
-        } catch (HeuristicMixedException e) {
-            Assert.assertNull(e);
-        } catch (HeuristicRollbackException e) {
-            Assert.assertNull(e);
-        } catch (RollbackException e) {
-            Assert.assertNull(e);
-        } catch (SystemException e) {
-            Assert.assertNull(e);
-        }
-        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
-    }
-
-    /**
-     * The basic transaction. Not exist transaction and test the requiredNew true and false.
-     */
-    private void basicTransactionWhenNoTransaction() {
-        final int b = 2;
-        final Callback<Integer> szumCB = new Callback<Integer>() {
-
-            @Override
-            public Integer execute() {
-                int a = 0;
-                Assert.assertEquals(Status.STATUS_ACTIVE, transactionSynchronizationRegistry.getTransactionStatus());
-                return a + b;
-            }
-        };
-
-        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
-        Integer sum = transactionHelper.doInTransaction(szumCB, false);
-        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
-        Assert.assertEquals(Integer.valueOf(2), sum);
-
-        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
-        sum = transactionHelper.doInTransaction(szumCB, true);
-        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
-        Assert.assertEquals(Integer.valueOf(2), sum);
-
-        try {
-            transactionHelper.doInTransaction(RUNTIMEEXCEPTION_CB, false);
-            Assert.fail("expect runtimeexception");
-        } catch (RuntimeException e) {
-            Assert.assertNotNull(e);
-        }
-
-        try {
-            transactionHelper.doInTransaction(RUNTIMEEXCEPTION_CB, true);
-            Assert.fail("expect runtimeexception");
-        } catch (RuntimeException e) {
-            Assert.assertNotNull(e);
-        }
-    }
+    };
 
     protected void setTransactionHelper(final TransactionHelper transactionHelper) {
         this.transactionHelper = transactionHelper;
-    }
-
-    protected void setTransactionManager(final TransactionManager transactionManager) {
-        this.transactionManager = transactionManager;
     }
 
     protected void setTransactionSynchronizationRegistry(
@@ -197,29 +87,515 @@ public class TransactionHelperTestImpl implements TransactionHelperTest {
     }
 
     @Override
-    public void testSuccessTransaction() {
+    public void test13() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
 
-        basicTransactionWhenNoTransaction();
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                transactionHelper.doInTransaction(new Callback<Void>() {
 
-        basicTransActionWhenExistActiveTransaction();
+                    @Override
+                    public Void execute() {
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        Integer zero = transactionHelper.doInTransaction(cbGetZero, true);
+                        Assert.assertEquals(Integer.valueOf(0), zero);
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        throw new IllegalArgumentException();
+                    }
+                }, true);
+                Assert.assertEquals(Status.STATUS_MARKED_ROLLBACK,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        try {
+            transactionHelper.doInTransaction(cb, true);
+            Assert.fail("Expect IllegalArgumentException.");
+        } catch (IllegalArgumentException e) {
+            Assert.assertNotNull(e);
+        }
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
 
     }
 
-    protected void unSetTransactionHelper(final TransactionHelper th) {
-        transactionHelper = null;
+    @Override
+    public void test14() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                transactionHelper.doInTransaction(new Callback<Void>() {
+
+                    @Override
+                    public Void execute() {
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        Integer zero = transactionHelper.doInTransaction(cbGetZero, false);
+                        Assert.assertEquals(Integer.valueOf(0), zero);
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        throw new IllegalArgumentException();
+                    }
+                }, true);
+                Assert.assertEquals(Status.STATUS_MARKED_ROLLBACK,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        try {
+            transactionHelper.doInTransaction(cb, true);
+            Assert.fail("Expect IllegalArgumentException.");
+        } catch (IllegalArgumentException e) {
+            Assert.assertNotNull(e);
+        }
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
     }
 
-    /**
-     * Unset (unbind) the transaction manager.
-     * 
-     * @param tm
-     *            the transaction manager.
-     */
-    protected void unSetTransactionManager(final TransactionManager tm) {
-        transactionManager = null;
+    @Override
+    public void test15() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                transactionHelper.doInTransaction(new Callback<Void>() {
+
+                    @Override
+                    public Void execute() {
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        Integer zero = transactionHelper.doInTransaction(cbGetZero, false);
+                        Assert.assertEquals(Integer.valueOf(0), zero);
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        throw new IllegalArgumentException();
+                    }
+                }, false);
+                Assert.assertEquals(Status.STATUS_MARKED_ROLLBACK,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        try {
+            transactionHelper.doInTransaction(cb, true);
+            Assert.fail("Expect IllegalArgumentException.");
+        } catch (IllegalArgumentException e) {
+            Assert.assertNotNull(e);
+        }
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
     }
 
-    protected void unSetTransactionSynchronizationRegistry(final TransactionSynchronizationRegistry tsr) {
-        transactionSynchronizationRegistry = null;
+    @Override
+    public void test16() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                transactionHelper.doInTransaction(new Callback<Void>() {
+
+                    @Override
+                    public Void execute() {
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        Integer zero = transactionHelper.doInTransaction(cbGetZero, true);
+                        Assert.assertEquals(Integer.valueOf(0), zero);
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        throw new IllegalArgumentException();
+                    }
+                }, false);
+                Assert.assertEquals(Status.STATUS_MARKED_ROLLBACK,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        try {
+            transactionHelper.doInTransaction(cb, true);
+            Assert.fail("Expect IllegalArgumentException.");
+        } catch (IllegalArgumentException e) {
+            Assert.assertNotNull(e);
+        }
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
     }
+
+    @Override
+    public void test17() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                transactionHelper.doInTransaction(new Callback<Void>() {
+
+                    @Override
+                    public Void execute() {
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        Integer zero = transactionHelper.doInTransaction(cbGetZero, true);
+                        Assert.assertEquals(Integer.valueOf(0), zero);
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        throw new IllegalArgumentException();
+                    }
+                }, true);
+                Assert.assertEquals(Status.STATUS_MARKED_ROLLBACK,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        try {
+            transactionHelper.doInTransaction(cb, false);
+            Assert.fail("Expect IllegalArgumentException.");
+        } catch (IllegalArgumentException e) {
+            Assert.assertNotNull(e);
+        }
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+
+    }
+
+    @Override
+    public void test18() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                transactionHelper.doInTransaction(new Callback<Void>() {
+
+                    @Override
+                    public Void execute() {
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        Integer zero = transactionHelper.doInTransaction(cbGetZero, false);
+                        Assert.assertEquals(Integer.valueOf(0), zero);
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        throw new IllegalArgumentException();
+                    }
+                }, true);
+                Assert.assertEquals(Status.STATUS_MARKED_ROLLBACK,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        try {
+            transactionHelper.doInTransaction(cb, false);
+            Assert.fail("Expect IllegalArgumentException.");
+        } catch (IllegalArgumentException e) {
+            Assert.assertNotNull(e);
+        }
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+    }
+
+    @Override
+    public void test19() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                transactionHelper.doInTransaction(new Callback<Void>() {
+
+                    @Override
+                    public Void execute() {
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        Integer zero = transactionHelper.doInTransaction(cbGetZero, false);
+                        Assert.assertEquals(Integer.valueOf(0), zero);
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        throw new IllegalArgumentException();
+                    }
+                }, false);
+                Assert.assertEquals(Status.STATUS_MARKED_ROLLBACK,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        try {
+            transactionHelper.doInTransaction(cb, false);
+            Assert.fail("Expect IllegalArgumentException.");
+        } catch (IllegalArgumentException e) {
+            Assert.assertNotNull(e);
+        }
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+    }
+
+    @Override
+    public void test20() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                transactionHelper.doInTransaction(new Callback<Void>() {
+
+                    @Override
+                    public Void execute() {
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        Integer zero = transactionHelper.doInTransaction(cbGetZero, true);
+                        Assert.assertEquals(Integer.valueOf(0), zero);
+                        Assert.assertEquals(Status.STATUS_ACTIVE,
+                                transactionSynchronizationRegistry.getTransactionStatus());
+                        throw new IllegalArgumentException();
+                    }
+                }, false);
+                Assert.assertEquals(Status.STATUS_MARKED_ROLLBACK,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        try {
+            transactionHelper.doInTransaction(cb, false);
+            Assert.fail("Expect IllegalArgumentException.");
+        } catch (IllegalArgumentException e) {
+            Assert.assertNotNull(e);
+        }
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+    }
+
+    @Override
+    public void testExistTransactionNotRequiresNewTransactionInsideGetZeroCBWithFalse() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                Integer zero = transactionHelper.doInTransaction(cbGetZero, false);
+                Assert.assertEquals(Integer.valueOf(0), zero);
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        Integer one = transactionHelper.doInTransaction(cb, false);
+        Assert.assertEquals(Integer.valueOf(1), one);
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+
+    }
+
+    @Override
+    public void testExistTransactionNotRequiresNewTransactionInsideGetZeroCBWithTrue() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                Integer zero = transactionHelper.doInTransaction(cbGetZero, true);
+                Assert.assertEquals(Integer.valueOf(0), zero);
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        Integer one = transactionHelper.doInTransaction(cb, false);
+        Assert.assertEquals(Integer.valueOf(1), one);
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+    }
+
+    @Override
+    public void testExistTransactionNotRequiresNewTransactionInsideIllegalArgumentExceptionCBWithFalse() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                transactionHelper.doInTransaction(cbIllegalArgumentException, false);
+                Assert.assertEquals(Status.STATUS_MARKED_ROLLBACK,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        try {
+            transactionHelper.doInTransaction(cb, false);
+            Assert.fail("Expect IllegalArgumentException, beacuse the inside tranzakción is throwing.");
+        } catch (IllegalArgumentException e) {
+            Assert.assertNotNull(e);
+        }
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+    }
+
+    @Override
+    public void testExistTransactionNotRequiresNewTransactionInsideIllegalArgumentExceptionCBWithTrue() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                transactionHelper.doInTransaction(cbIllegalArgumentException, true);
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        try {
+            transactionHelper.doInTransaction(cb, false);
+            Assert.fail("Expect IllegalArgumentException, because inside method throwing that.");
+        } catch (IllegalArgumentException e) {
+            Assert.assertNotNull(e);
+        }
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+
+    }
+
+    @Override
+    public void testExistTransactionRequiresNewTransactionInsideGetZeroCBWithFalse() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                Integer zero = transactionHelper.doInTransaction(cbGetZero, false);
+                Assert.assertEquals(Integer.valueOf(0), zero);
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        Integer one = transactionHelper.doInTransaction(cb, true);
+        Assert.assertEquals(Integer.valueOf(1), one);
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+    }
+
+    @Override
+    public void testExistTransactionRequiresNewTransactionInsideGetZeroCBWithTrue() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                Integer zero = transactionHelper.doInTransaction(cbGetZero, true);
+                Assert.assertEquals(Integer.valueOf(0), zero);
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        Integer one = transactionHelper.doInTransaction(cb, true);
+        Assert.assertEquals(Integer.valueOf(1), one);
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+    }
+
+    @Override
+    public void testExistTransactionRequiresNewTransactionInsideIllegalArgumentExceptionCBWithFalse() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                transactionHelper.doInTransaction(cbIllegalArgumentException, false);
+                Assert.assertEquals(Status.STATUS_MARKED_ROLLBACK,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        try {
+            transactionHelper.doInTransaction(cb, true);
+            Assert.fail("Expect IllegalArgumentException, beacuse the inside tranzakción is throwing.");
+        } catch (IllegalArgumentException e) {
+            Assert.assertNotNull(e);
+        }
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+
+    }
+
+    @Override
+    public void testExistTransactionRequiresNewTransactionInsideIllegalArgumentExceptionCBWithTrue() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Callback<Integer> cb = new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                transactionHelper.doInTransaction(cbIllegalArgumentException, true);
+                Assert.assertEquals(Status.STATUS_ACTIVE,
+                        transactionSynchronizationRegistry.getTransactionStatus());
+                return 1;
+            }
+        };
+        try {
+            transactionHelper.doInTransaction(cb, true);
+            Assert.fail("Expect IllegalArgumentException, because inside method throwing that.");
+        } catch (IllegalArgumentException e) {
+            Assert.assertNotNull(e);
+        }
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+    }
+
+    @Override
+    public void testNoTransactionNotRequiresNewTransactionGetZeroCB() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Integer zero = transactionHelper.doInTransaction(cbGetZero, false);
+        Assert.assertEquals(Integer.valueOf(0), zero);
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+    }
+
+    @Override
+    public void testNoTransactionNotRequiresNewTransactionIllegalArgumentExceptionCB() {
+        try {
+            transactionHelper.doInTransaction(cbIllegalArgumentException, false);
+            Assert.fail("Expect IllegalArgumentException.");
+        } catch (IllegalArgumentException e) {
+            Assert.assertNotNull(e);
+        }
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+    }
+
+    @Override
+    public void testNoTransactionRequiresNewTransactionGetZeroCB() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        Integer zero = transactionHelper.doInTransaction(cbGetZero, true);
+        Assert.assertEquals(Integer.valueOf(0), zero);
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+    }
+
+    @Override
+    public void testNoTransactionRequiresNewTransactionIllegalArgumentExceptionCB() {
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+        try {
+            transactionHelper.doInTransaction(cbIllegalArgumentException, true);
+            Assert.fail("Expect IllegalArgumentException.");
+        } catch (IllegalArgumentException e) {
+            Assert.assertNotNull(e);
+        }
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, transactionSynchronizationRegistry.getTransactionStatus());
+    }
+
 }
