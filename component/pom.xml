@@ -74,13 +74,13 @@
     </build>
 
     <dependencies>
+        <!-- dependency for the Declarative Services (DS). Plugin processor and annotations -->
         <dependency>
             <groupId>org.apache.felix</groupId>
             <artifactId>org.apache.felix.scr</artifactId>
             <version>1.8.0</version>
             <scope>provided</scope>
         </dependency>
-
         <dependency>
             <groupId>org.apache.felix</groupId>
             <artifactId>org.apache.felix.scr.annotations</artifactId>
@@ -88,6 +88,7 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- dependency for the transactionManager -->
         <dependency>
             <groupId>org.apache.aries.transaction</groupId>
             <artifactId>org.apache.aries.transaction.manager</artifactId>

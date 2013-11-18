@@ -1,4 +1,4 @@
-package org.everit.osgi.transaction.helper.component.api;
+package org.everit.osgi.transaction.helper.tests;
 
 /*
  * Copyright (c) 2011, Everit Kft.
@@ -21,35 +21,20 @@ package org.everit.osgi.transaction.helper.component.api;
  * MA 02110-1301  USA
  */
 
+import javax.transaction.Status;
+
 /**
- * Exception class for the transaction helper.
+ * Extending javax.persistence.Status interface which contains the start and end status.
  */
-public class TransactionHelperException extends RuntimeException {
+public interface XAResourceStatus extends Status {
 
     /**
-     * Generated serial version UID.
+     * The transaction is assigned resource and started.
      */
-    private static final long serialVersionUID = 7548858576510527613L;
+    int STATUS_START = 10;
 
     /**
-     * Constructs a new transaction helper exception with the specified detail message and cause.
-     * 
-     * @param msg
-     *            the detail message.
-     * @param cause
-     *            the cause.
+     * The transaction is assigned resource and ended without any actions.
      */
-    public TransactionHelperException(final String msg, final Throwable cause) {
-        super(msg, cause);
-    }
-
-    /**
-     * Constructs a new transaction helper exception with the specified cause.
-     * 
-     * @param cause
-     *            the cause.
-     */
-    public TransactionHelperException(final Throwable cause) {
-        super(cause);
-    }
+    int STATUS_END = 14;
 }

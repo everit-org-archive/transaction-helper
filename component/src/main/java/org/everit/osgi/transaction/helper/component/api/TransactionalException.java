@@ -22,25 +22,34 @@ package org.everit.osgi.transaction.helper.component.api;
  */
 
 /**
- * The helper service to start the {@link Callback} in new transaction.
+ * Exception class for the transaction helper.
  */
-public interface TransactionHelper {
+public class TransactionalException extends RuntimeException {
 
     /**
-     * The method executes the {@link Callback} in new transaction and returns the specific generic type.
-     * 
-     * If has a {@link RuntimeException} or other exception roll backing the transaction.
-     * 
-     * @param cb
-     *            contains the execute code which want to run in the transaction.
-     * @param requiresNew
-     *            <code>true</code> if want a new transaction or <code>false</code> if want to partake the exist
-     *            transaction.
-     * @return the execute result.
-     * 
-     * @throws TransactionalException
-     *             if has {@link RuntimeException} or other transaction exception.
+     * Generated serial version UID.
      */
-    <R> R doInTransaction(final Callback<R> cb, final boolean requiresNew);
+    private static final long serialVersionUID = 7548858576510527613L;
 
+    /**
+     * Constructs a new transaction helper exception with the specified detail message and cause.
+     * 
+     * @param msg
+     *            the detail message.
+     * @param cause
+     *            the cause.
+     */
+    public TransactionalException(final String msg, final Throwable cause) {
+        super(msg, cause);
+    }
+
+    /**
+     * Constructs a new transaction helper exception with the specified cause.
+     * 
+     * @param cause
+     *            the cause.
+     */
+    public TransactionalException(final Throwable cause) {
+        super(cause);
+    }
 }
