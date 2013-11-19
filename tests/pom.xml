@@ -163,7 +163,7 @@
             <artifactId>org.everit.osgi.dev.richconsole</artifactId>
             <version>1.0.1</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.apache.aries</groupId>
             <artifactId>org.apache.aries.util</artifactId>

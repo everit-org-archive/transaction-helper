@@ -49,7 +49,7 @@ public class TransactionHelperImpl implements TransactionHelper {
     /**
      * The {@link TransactionManager} instance.
      */
-    @Reference(bind = "setTransactionManager", unbind = "unSetTransactionManager", policy = ReferencePolicy.STATIC)
+    @Reference(bind = "setTransactionManager", policy = ReferencePolicy.STATIC)
     private TransactionManager transactionManager;
 
     /**
@@ -259,13 +259,4 @@ public class TransactionHelperImpl implements TransactionHelper {
         this.transactionManager = transactionManager;
     }
 
-    /**
-     * Unset (unbind) the transaction manager.
-     * 
-     * @param tm
-     *            the transaction manager.
-     */
-    protected void unSetTransactionManager(final TransactionManager tm) {
-        transactionManager = null;
-    }
 }
