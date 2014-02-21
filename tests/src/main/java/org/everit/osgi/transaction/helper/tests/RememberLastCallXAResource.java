@@ -36,18 +36,23 @@ public class RememberLastCallXAResource implements XAResource {
      */
     private int status = DEFAULT_STATUS;
 
+    private Xid xid = null;
+
     @Override
     public void commit(final Xid xid, final boolean onePhase) throws XAException {
         status = Status.STATUS_COMMITTED;
+        this.xid = xid;
     }
 
     @Override
     public void end(final Xid xid, final int flags) throws XAException {
         status = XAResourceStatus.STATUS_END;
+        this.xid = xid;
     }
 
     @Override
     public void forget(final Xid xid) throws XAException {
+        this.xid = xid;
     }
 
     public int getStatus() {
@@ -59,14 +64,19 @@ public class RememberLastCallXAResource implements XAResource {
         return 0;
     }
 
+    public Xid getXid() {
+        return xid;
+    }
+
     @Override
     public boolean isSameRM(final XAResource xares) throws XAException {
-        return true;
+        return xares == this;
     }
 
     @Override
     public int prepare(final Xid xid) throws XAException {
-        status = XAResourceStatus.STATUS_PREPARING;
+        status = Status.STATUS_PREPARING;
+        this.xid = xid;
         return 0;
     }
 
@@ -78,6 +88,7 @@ public class RememberLastCallXAResource implements XAResource {
     @Override
     public void rollback(final Xid xid) throws XAException {
         status = Status.STATUS_ROLLEDBACK;
+        this.xid = xid;
     }
 
     @Override
@@ -88,6 +99,6 @@ public class RememberLastCallXAResource implements XAResource {
     @Override
     public void start(final Xid xid, final int flags) throws XAException {
         status = XAResourceStatus.STATUS_START;
+        this.xid = xid;
     }
-
 }

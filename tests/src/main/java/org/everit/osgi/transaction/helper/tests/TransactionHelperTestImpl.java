@@ -16,6 +16,8 @@
  */
 package org.everit.osgi.transaction.helper.tests;
 
+import java.util.Arrays;
+
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
@@ -28,7 +30,6 @@ import org.apache.felix.scr.annotations.Properties;
 import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
-import org.everit.osgi.dev.testrunner.TestDuringDevelopment;
 import org.everit.osgi.transaction.helper.api.Callback;
 import org.everit.osgi.transaction.helper.api.TransactionHelper;
 import org.everit.osgi.transaction.helper.api.TransactionalException;
@@ -61,79 +62,6 @@ public class TransactionHelperTestImpl {
     @Reference(bind = "setTransactionManager")
     private TransactionManager transactionManager;
 
-    protected void setTransactionHelper(final TransactionHelper transactionHelper) {
-        this.transactionHelper = transactionHelper;
-    }
-
-    protected void setTransactionManager(final TransactionManager transactionManager) {
-        this.transactionManager = transactionManager;
-    }
-
-    @Test
-    public void _04_testMandatoryFailAsThereIsNoActiveTransaction() {
-        System.out.println("4");
-        try {
-            transactionHelper.mandatory(null);
-            Assert.fail("Should have thrown an exception");
-        } catch (TransactionalException e) {
-            Assert.assertEquals("Allowed status: active; Current status: no_transaction", e.getMessage());
-        }
-    }
-
-    @Test
-    public void _05_testMandatoryFailDueToInnerException() {
-        final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
-        try {
-            transactionHelper.required(new Callback<Object>() {
-
-                @Override
-                public Object execute() {
-                    enlistResource(lastTrStatus);
-                    try {
-                        return transactionHelper.mandatory(new Callback<Object>() {
-
-                            @Override
-                            public Object execute() {
-                                assertTransactionStatus(Status.STATUS_ACTIVE);
-                                throw new NumberFormatException();
-                            }
-                        });
-                    } catch (NumberFormatException e) {
-                        assertTransactionStatus(Status.STATUS_MARKED_ROLLBACK);
-                        throw e;
-                    }
-                }
-            });
-            Assert.fail("Exception should be thrown");
-        } catch (NumberFormatException e) {
-            Assert.assertEquals(Status.STATUS_ROLLEDBACK, lastTrStatus.getStatus());
-        }
-    }
-
-    @Test
-    public void _03_testMandatorySuccess() {
-        final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
-        transactionHelper.required(new Callback<Integer>() {
-
-            @Override
-            public Integer execute() {
-                enlistResource(lastTrStatus);
-                Integer result = transactionHelper.mandatory(new Callback<Integer>() {
-
-                    @Override
-                    public Integer execute() {
-                        assertTransactionStatus(Status.STATUS_ACTIVE);
-                        return 1;
-                    }
-                });
-                assertTransactionStatus(Status.STATUS_ACTIVE);
-                Assert.assertEquals(XAResourceStatus.STATUS_START, lastTrStatus.getStatus());
-                return result;
-            }
-        });
-        Assert.assertEquals(XAResourceStatus.STATUS_COMMITTED, lastTrStatus.getStatus());
-    }
-
     @Test
     public void _01_testRequiredNoTransactionBeforeSucess() {
         final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
@@ -149,7 +77,6 @@ public class TransactionHelperTestImpl {
     }
 
     @Test
-    @TestDuringDevelopment
     public void _02_testRequiredNoTransactionBeforeFail() {
         final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
         try {
@@ -186,12 +113,11 @@ public class TransactionHelperTestImpl {
                 return result;
             }
         });
-        Assert.assertEquals(XAResourceStatus.STATUS_COMMITTED, lastTrStatus.getStatus());
+        Assert.assertEquals(Status.STATUS_COMMITTED, lastTrStatus.getStatus());
         Assert.assertEquals(1, result);
     }
 
     @Test
-    @TestDuringDevelopment
     public void _04_testRequiredOngoingTRFail() {
         final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
         try {
@@ -217,12 +143,392 @@ public class TransactionHelperTestImpl {
             });
             Assert.fail("Exception should be thrown here");
         } catch (NumberFormatException e) {
-            Assert.assertEquals(XAResourceStatus.STATUS_ROLLEDBACK, lastTrStatus.getStatus());
+            Assert.assertEquals(Status.STATUS_ROLLEDBACK, lastTrStatus.getStatus());
         }
 
     }
 
-    private void enlistResource(XAResource resource) {
+    @Test
+    public void _05_testRequiredOngoingTRCaughedFail() {
+        final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
+        try {
+            transactionHelper.required(new Callback<Integer>() {
+
+                @Override
+                public Integer execute() {
+                    enlistResource(lastTrStatus);
+                    try {
+                        return transactionHelper.required(new Callback<Integer>() {
+
+                            @Override
+                            public Integer execute() {
+                                throw new NumberFormatException();
+                            }
+                        });
+                    } catch (NumberFormatException e) {
+                        Assert.assertEquals(XAResourceStatus.STATUS_START, lastTrStatus.getStatus());
+                        assertTransactionStatus(Status.STATUS_MARKED_ROLLBACK);
+                    }
+                    return 1;
+                }
+            });
+            Assert.fail("IllegalstateException should have been thrown here");
+        } catch (TransactionalException e) {
+            Assert.assertTrue(e.getCause() instanceof RollbackException);
+            Assert.assertEquals(Status.STATUS_ROLLEDBACK, lastTrStatus.getStatus());
+        }
+    }
+
+    @Test
+    public void _06_testRequiresNewNoTransactionSuccess() {
+        final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
+        Integer result = transactionHelper.requiresNew(new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                enlistResource(lastTrStatus);
+                Assert.assertEquals(XAResourceStatus.STATUS_START, lastTrStatus.getStatus());
+                Assert.assertEquals(Status.STATUS_ACTIVE, getStatus());
+                return 1;
+            }
+
+        });
+        Assert.assertEquals(Status.STATUS_COMMITTED, lastTrStatus.getStatus());
+        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, getStatus());
+        Assert.assertEquals(1, result.intValue());
+    }
+
+    @Test
+    public void _07_testRequiresNewOngoingTransactionSuccess() {
+        final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
+        transactionHelper.required(new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                final RememberLastCallXAResource innerLastTrStatus = new RememberLastCallXAResource();
+                enlistResource(lastTrStatus);
+                Integer result = transactionHelper.requiresNew(new Callback<Integer>() {
+
+                    @Override
+                    public Integer execute() {
+                        enlistResource(innerLastTrStatus);
+                        byte[] outerTrId = lastTrStatus.getXid().getGlobalTransactionId();
+                        byte[] innerTrId = innerLastTrStatus.getXid().getGlobalTransactionId();
+                        Assert.assertFalse(Arrays.equals(outerTrId, innerTrId));
+                        return 1;
+                    }
+                });
+                Assert.assertEquals(Status.STATUS_COMMITTED, innerLastTrStatus.getStatus());
+                Assert.assertEquals(Status.STATUS_ACTIVE, getStatus());
+                Assert.assertEquals(XAResourceStatus.STATUS_START, lastTrStatus.getStatus());
+                return result;
+            }
+        });
+        Assert.assertEquals(Status.STATUS_COMMITTED, lastTrStatus.getStatus());
+    }
+
+    @Test
+    public void _08_testRequiresNewOngoingTransactionFailAndCatch() {
+        final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
+        transactionHelper.requiresNew(new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                final RememberLastCallXAResource innerLastTrStatus = new RememberLastCallXAResource();
+                enlistResource(lastTrStatus);
+                try {
+                    transactionHelper.requiresNew(new Callback<Integer>() {
+
+                        @Override
+                        public Integer execute() {
+                            enlistResource(innerLastTrStatus);
+                            throw new NumberFormatException();
+                        }
+                    });
+                    Assert.fail("Code part should not be accessible");
+                } catch (NumberFormatException e) {
+                    Assert.assertEquals(Status.STATUS_ROLLEDBACK, innerLastTrStatus.getStatus());
+                    Assert.assertEquals(Status.STATUS_ACTIVE, getStatus());
+                    Assert.assertEquals(XAResourceStatus.STATUS_START, lastTrStatus.getStatus());
+                }
+
+                return 1;
+            }
+        });
+        Assert.assertEquals(Status.STATUS_COMMITTED, lastTrStatus.getStatus());
+    }
+
+    @Test
+    public void _09_testMandatorySuccess() {
+        final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
+        transactionHelper.required(new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                enlistResource(lastTrStatus);
+                Integer result = transactionHelper.mandatory(new Callback<Integer>() {
+
+                    @Override
+                    public Integer execute() {
+                        assertTransactionStatus(Status.STATUS_ACTIVE);
+                        return 1;
+                    }
+                });
+                assertTransactionStatus(Status.STATUS_ACTIVE);
+                Assert.assertEquals(XAResourceStatus.STATUS_START, lastTrStatus.getStatus());
+                return result;
+            }
+        });
+        Assert.assertEquals(Status.STATUS_COMMITTED, lastTrStatus.getStatus());
+    }
+
+    @Test
+    public void _10_testMandatoryFailAsThereIsNoActiveTransaction() {
+        System.out.println("4");
+        try {
+            transactionHelper.mandatory(null);
+            Assert.fail("Should have thrown an exception");
+        } catch (TransactionalException e) {
+            Assert.assertEquals("Allowed status: active; Current status: no_transaction", e.getMessage());
+        }
+    }
+
+    @Test
+    public void _11_testMandatoryFailDueToInnerException() {
+        final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
+        try {
+            transactionHelper.required(new Callback<Object>() {
+
+                @Override
+                public Object execute() {
+                    enlistResource(lastTrStatus);
+                    try {
+                        return transactionHelper.mandatory(new Callback<Object>() {
+
+                            @Override
+                            public Object execute() {
+                                assertTransactionStatus(Status.STATUS_ACTIVE);
+                                throw new NumberFormatException();
+                            }
+                        });
+                    } catch (NumberFormatException e) {
+                        assertTransactionStatus(Status.STATUS_MARKED_ROLLBACK);
+                        throw e;
+                    }
+                }
+            });
+            Assert.fail("Exception should be thrown");
+        } catch (NumberFormatException e) {
+            Assert.assertEquals(Status.STATUS_ROLLEDBACK, lastTrStatus.getStatus());
+        }
+    }
+
+    @Test
+    public void _12_testNeverSuccess() {
+        Integer result = transactionHelper.never(new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_NO_TRANSACTION, getStatus());
+                return 1;
+            }
+        });
+        Assert.assertEquals(1, result.intValue());
+    }
+
+    @Test
+    public void _13_testNeverFailDueToOngoingTransaction() {
+        final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
+        transactionHelper.required(new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                enlistResource(lastTrStatus);
+                try {
+                    transactionHelper.never(new Callback<Integer>() {
+
+                        @Override
+                        public Integer execute() {
+                            Assert.fail("Unreachable code");
+                            return null;
+                        }
+
+                    });
+                } catch (TransactionalException e) {
+                    Assert.assertEquals("Allowed status: no_transaction; Current status: active", e.getMessage());
+                }
+                return null;
+            }
+        });
+        Assert.assertEquals(Status.STATUS_COMMITTED, lastTrStatus.getStatus());
+    }
+
+    @Test
+    public void _14_testSupportsWithSuccessNoTransaction() {
+        Integer result = transactionHelper.supports(new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_NO_TRANSACTION, getStatus());
+                return 1;
+            }
+        });
+        Assert.assertEquals(1, result.intValue());
+    }
+
+    @Test
+    public void _15_testSupportsWithSuccessOngoingTransaciton() {
+        final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
+        final RememberLastCallXAResource outerLastTrStatus = new RememberLastCallXAResource();
+        Integer result = transactionHelper.required(new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                enlistResource(outerLastTrStatus);
+                Integer result = transactionHelper.supports(new Callback<Integer>() {
+
+                    @Override
+                    public Integer execute() {
+                        enlistResource(lastTrStatus);
+                        Assert.assertEquals(Status.STATUS_ACTIVE, getStatus());
+                        byte[] outerXID = outerLastTrStatus.getXid().getGlobalTransactionId();
+                        byte[] innerXID = lastTrStatus.getXid().getGlobalTransactionId();
+                        Assert.assertTrue(Arrays.equals(outerXID, innerXID));
+                        return 1;
+                    }
+                });
+                Assert.assertEquals(XAResourceStatus.STATUS_START, lastTrStatus.getStatus());
+                return result;
+            }
+        });
+        Assert.assertEquals(Status.STATUS_COMMITTED, outerLastTrStatus.getStatus());
+        Assert.assertEquals(Status.STATUS_COMMITTED, lastTrStatus.getStatus());
+        Assert.assertEquals(1, result.intValue());
+    }
+
+    @Test
+    public void _16_testSupportsWithExceptionNoTransaction() {
+        try {
+            transactionHelper.supports(new Callback<Integer>() {
+
+                @Override
+                public Integer execute() {
+                    throw new NumberFormatException();
+                }
+            });
+            Assert.fail("Code should be unreachable");
+        } catch (NumberFormatException e) {
+            // Good
+        }
+    }
+
+    @Test
+    public void _17_testSupporstWithExceptionOngoingTransaction() {
+        final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
+        try {
+            transactionHelper.required(new Callback<Integer>() {
+
+                @Override
+                public Integer execute() {
+                    enlistResource(lastTrStatus);
+                    try {
+                        transactionHelper.supports(new Callback<Integer>() {
+
+                            @Override
+                            public Integer execute() {
+                                throw new NumberFormatException();
+                            }
+                        });
+                        Assert.fail("Code should be unreachable");
+                    } catch (NumberFormatException e) {
+                        Assert.assertEquals(Status.STATUS_MARKED_ROLLBACK, getStatus());
+                    }
+                    return null;
+                }
+            });
+            Assert.fail("Code should be unreachable");
+        } catch (TransactionalException e) {
+            Assert.assertEquals(Status.STATUS_ROLLEDBACK, lastTrStatus.getStatus());
+        }
+    }
+
+    @Test
+    public void _18_notSupportedWithSuccessNoTransaction() {
+        Integer result = transactionHelper.notSupported(new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                Assert.assertEquals(Status.STATUS_NO_TRANSACTION, getStatus());
+                return 1;
+            }
+        });
+        Assert.assertEquals(1, result.intValue());
+    }
+
+    @Test
+    public void _19_notSupportedWithSuccessOngoingTransaction() {
+        final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
+        final RememberLastCallXAResource lastTrStatus2 = new RememberLastCallXAResource();
+        transactionHelper.required(new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                enlistResource(lastTrStatus);
+                byte[] trIdBefore = lastTrStatus.getXid().getGlobalTransactionId();
+                Integer result = transactionHelper.notSupported(new Callback<Integer>() {
+
+                    @Override
+                    public Integer execute() {
+                        Assert.assertEquals(Status.STATUS_NO_TRANSACTION, getStatus());
+                        return 1;
+                    }
+                });
+                Assert.assertEquals(1, result.intValue());
+                Assert.assertEquals(XAResourceStatus.STATUS_START, lastTrStatus.getStatus());
+                Assert.assertEquals(Status.STATUS_ACTIVE, getStatus());
+
+                enlistResource(lastTrStatus2);
+                byte[] trIdAfter = lastTrStatus2.getXid().getGlobalTransactionId();
+                Assert.assertTrue(Arrays.equals(trIdBefore, trIdAfter));
+                return result;
+            }
+        });
+        Assert.assertEquals(Status.STATUS_COMMITTED, lastTrStatus.getStatus());
+        Assert.assertEquals(Status.STATUS_COMMITTED, lastTrStatus2.getStatus());
+    }
+
+    @Test
+    public void _20_testNotSupportsWithFailOngoingTransaction() {
+        final RememberLastCallXAResource lastTrStatus = new RememberLastCallXAResource();
+        transactionHelper.required(new Callback<Integer>() {
+
+            @Override
+            public Integer execute() {
+                enlistResource(lastTrStatus);
+                try {
+                    transactionHelper.notSupported(new Callback<Integer>() {
+
+                        @Override
+                        public Integer execute() {
+                            throw new NumberFormatException();
+                        }
+                    });
+                    Assert.fail("Should be unreachable code");
+                } catch (NumberFormatException e) {
+                    Assert.assertEquals(Status.STATUS_ACTIVE, getStatus());
+                }
+                return null;
+            }
+        });
+        Assert.assertEquals(Status.STATUS_COMMITTED, lastTrStatus.getStatus());
+    }
+
+    private void assertTransactionStatus(final int expected) {
+        int status = getStatus();
+        Assert.assertEquals(expected, status);
+    }
+
+    private void enlistResource(final XAResource resource) {
         Transaction transaction = getTransaction();
         try {
             transaction.enlistResource(resource);
@@ -235,9 +541,12 @@ public class TransactionHelperTestImpl {
         }
     }
 
-    private void assertTransactionStatus(int expected) {
-        int status = getStatus();
-        Assert.assertEquals(expected, status);
+    private int getStatus() {
+        try {
+            return transactionManager.getStatus();
+        } catch (SystemException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Transaction getTransaction() {
@@ -248,11 +557,11 @@ public class TransactionHelperTestImpl {
         }
     }
 
-    private int getStatus() {
-        try {
-            return transactionManager.getStatus();
-        } catch (SystemException e) {
-            throw new RuntimeException(e);
-        }
+    protected void setTransactionHelper(final TransactionHelper transactionHelper) {
+        this.transactionHelper = transactionHelper;
+    }
+
+    protected void setTransactionManager(final TransactionManager transactionManager) {
+        this.transactionManager = transactionManager;
     }
 }

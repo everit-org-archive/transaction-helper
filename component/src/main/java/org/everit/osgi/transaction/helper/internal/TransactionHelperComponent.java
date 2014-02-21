@@ -37,7 +37,7 @@ import org.osgi.service.log.LogService;
 /**
  * Implementation of {@link TransactionHelper}.
  */
-@Component(name = "TransactionHelper", metatype = true)
+@Component(name = "org.everit.osgi.transaction.helper.TransactionHelper", metatype = true)
 @Properties({ @Property(name = "transactionManager.target"), @Property(name = "logService.target") })
 @Service(value = TransactionHelper.class)
 public class TransactionHelperComponent implements TransactionHelper {
@@ -50,6 +50,115 @@ public class TransactionHelperComponent implements TransactionHelper {
      */
     @Reference(bind = "bindTransactionManager", policy = ReferencePolicy.STATIC)
     private TransactionManager transactionManager;
+
+    protected void bindTransactionManager(final TransactionManager transactionManager) {
+        this.transactionManager = transactionManager;
+    }
+
+    private <R> R doInNewTransaction(final Callback<R> callback) {
+        try {
+            transactionManager.begin();
+        } catch (NotSupportedException e) {
+            throw new TransactionalException(e);
+        } catch (SystemException e) {
+            throw new TransactionalException(e);
+        }
+
+        R result = null;
+
+        try {
+            result = doInOngoingTransaction(callback);
+        } catch (RuntimeException e) {
+            rollbackAndReThrow(e);
+        }
+
+        try {
+            transactionManager.commit();
+        } catch (Exception e) {
+            // No rollback is necessary here as if there was an exception during calling commit, the transaction is
+            // either rolled back or there is no transaction to roll back.
+            throwWrappedIfNotRuntimeOrOriginal(e);
+        }
+        return result;
+    }
+
+    private <R> R doInOngoingTransaction(final Callback<R> callback) {
+        Transaction transaction = getTransaction();
+        try {
+            return callback.execute();
+        } catch (RuntimeException e) {
+            setRollbackOnly(transaction, e);
+            throw e;
+        }
+    }
+
+    private <R> R doInSuspended(final Callback<R> callback) {
+        Transaction transaction = getTransaction();
+        try {
+            transactionManager.suspend();
+        } catch (SystemException e) {
+            throw new TransactionalException(e);
+        }
+
+        RuntimeException thrownException = null;
+        try {
+            return callback.execute();
+        } catch (RuntimeException e) {
+            thrownException = e;
+            throw e;
+        } finally {
+            resume(transaction, thrownException);
+        }
+    }
+
+    private void forceTransactionStatus(final int allowedStatus) {
+        int status = getStatus();
+        if (status != allowedStatus) {
+            throwNotAllowedStatus(status, allowedStatus);
+        }
+    }
+
+    private int getStatus() {
+        try {
+            return transactionManager.getStatus();
+        } catch (SystemException e) {
+            throw new TransactionalException(e);
+        }
+    }
+
+    private Transaction getTransaction() {
+        try {
+            return transactionManager.getTransaction();
+        } catch (SystemException e) {
+            throw new TransactionalException(e);
+        }
+    }
+
+    @Override
+    public <R> R mandatory(final Callback<R> callback) {
+        forceTransactionStatus(Status.STATUS_ACTIVE);
+        return doInOngoingTransaction(callback);
+    }
+
+    @Override
+    public <R> R never(final Callback<R> callback) {
+        forceTransactionStatus(Status.STATUS_NO_TRANSACTION);
+        return callback.execute();
+    }
+
+    @Override
+    public <R> R notSupported(final Callback<R> callback) {
+        int status = getStatus();
+        if (Status.STATUS_NO_TRANSACTION == status) {
+            return callback.execute();
+        }
+
+        if (status != Status.STATUS_ACTIVE) {
+            throwNotAllowedStatus(status, Status.STATUS_NO_TRANSACTION, Status.STATUS_ACTIVE);
+        }
+
+        return doInSuspended(callback);
+    }
 
     @Override
     public <R> R required(final Callback<R> callback) {
@@ -78,32 +187,15 @@ public class TransactionHelperComponent implements TransactionHelper {
         });
     }
 
-    private <R> R doInNewTransaction(final Callback<R> callback) {
+    private void resume(final Transaction transaction, final RuntimeException thrownException) {
         try {
-            transactionManager.begin();
-        } catch (NotSupportedException e) {
-            throw new TransactionalException(e);
-        } catch (SystemException e) {
-            throw new TransactionalException(e);
-        }
-
-        R result = null;
-
-        try {
-            result = doInOngoingTransaction(callback);
-        } catch (RuntimeException e) {
-            rollbackAndReThrow(e);
-        }
-
-        try {
-            transactionManager.commit();
+            transactionManager.resume(transaction);
         } catch (Exception e) {
-            rollbackAndReThrow(e);
+            throwExceptionOverException(thrownException, e);
         }
-        return result;
     }
 
-    private void rollbackAndReThrow(Exception thrownException) {
+    private void rollbackAndReThrow(final Exception thrownException) {
         try {
             transactionManager.rollback();
             throwWrappedIfNotRuntimeOrOriginal(thrownException);
@@ -112,101 +204,16 @@ public class TransactionHelperComponent implements TransactionHelper {
         }
     }
 
-    private void throwWrappedIfNotRuntimeOrOriginal(final Exception e) {
-        if (e instanceof RuntimeException) {
-            throw (RuntimeException) e;
-        }
-        throw new TransactionalException(e);
-    }
-
-    private <R> R doInOngoingTransaction(final Callback<R> callback) {
-        Transaction transaction = getTransaction();
+    private void setRollbackOnly(final Transaction transaction, final RuntimeException thrownException) {
         try {
-            return callback.execute();
-        } catch (RuntimeException e) {
-            setRollbackOnly(transaction, e);
-            throw e;
-        }
-    }
-
-    protected void bindTransactionManager(final TransactionManager transactionManager) {
-        this.transactionManager = transactionManager;
-    }
-
-    @Override
-    public <R> R mandatory(final Callback<R> callback) {
-        forceTransactionStatus(Status.STATUS_ACTIVE);
-        return doInOngoingTransaction(callback);
-    }
-
-    @Override
-    public <R> R never(final Callback<R> callback) {
-        forceTransactionStatus(Status.STATUS_NO_TRANSACTION);
-        return callback.execute();
-    }
-
-    private void forceTransactionStatus(int allowedStatus) {
-        int status = getStatus();
-        if (status != allowedStatus) {
-            throwNotAllowedStatus(status, allowedStatus);
-        }
-    }
-
-    private void throwNotAllowedStatus(int currentStatus, int... allowedStatuses) {
-        StringBuilder sb = new StringBuilder("Allowed status");
-        int n = allowedStatuses.length;
-        if (n == 1) {
-            sb.append(": ").append(TransactionConstants.STATUS_NAME_BY_CODE.get(allowedStatuses[0]));
-        } else {
-            sb.append("es: [");
-            for (int i = 0; i < n; i++) {
-                sb.append(TransactionConstants.STATUS_NAME_BY_CODE.get(allowedStatuses[i]));
-                if (i < n - 1) {
-                    sb.append(", ");
-                }
-            }
-            sb.append("]");
-        }
-        sb.append("; Current status: ").append(TransactionConstants.STATUS_NAME_BY_CODE.get(currentStatus));
-
-        throw new TransactionalException(sb.toString());
-    }
-
-    @Override
-    public <R> R notSupported(final Callback<R> callback) {
-        int status = getStatus();
-        if (Status.STATUS_NO_TRANSACTION == status) {
-            return callback.execute();
-        }
-
-        if (status != Status.STATUS_ACTIVE) {
-            throwNotAllowedStatus(status, Status.STATUS_NO_TRANSACTION, Status.STATUS_ACTIVE);
-        }
-
-        return doInSuspended(callback);
-    }
-
-    private <R> R doInSuspended(Callback<R> callback) {
-        Transaction transaction = getTransaction();
-        try {
-            transactionManager.suspend();
-        } catch (SystemException e) {
-            throw new TransactionalException(e);
-        }
-
-        RuntimeException thrownException = null;
-        try {
-            return callback.execute();
-        } catch (RuntimeException e) {
-            thrownException = e;
-            throw e;
-        } finally {
-            resume(transaction, thrownException);
+            transaction.setRollbackOnly();
+        } catch (Exception e) {
+            throwExceptionOverException(thrownException, e);
         }
     }
 
     @Override
-    public <R> R supports(Callback<R> callback) {
+    public <R> R supports(final Callback<R> callback) {
         int status = getStatus();
         if (Status.STATUS_NO_TRANSACTION == status) {
             return callback.execute();
@@ -223,23 +230,7 @@ public class TransactionHelperComponent implements TransactionHelper {
         }
     }
 
-    private void setRollbackOnly(Transaction transaction, RuntimeException thrownException) {
-        try {
-            transaction.setRollbackOnly();
-        } catch (Exception e) {
-            throwExceptionOverException(thrownException, e);
-        }
-    }
-
-    private void resume(Transaction transaction, RuntimeException thrownException) {
-        try {
-            transactionManager.resume(transaction);
-        } catch (Exception e) {
-            throwExceptionOverException(thrownException, e);
-        }
-    }
-
-    private void throwExceptionOverException(Exception previousException, Exception newException) {
+    private void throwExceptionOverException(final Exception previousException, final Exception newException) {
         if (previousException != null) {
             logService
                     .log(LogService.LOG_ERROR,
@@ -250,19 +241,30 @@ public class TransactionHelperComponent implements TransactionHelper {
         throwWrappedIfNotRuntimeOrOriginal(newException);
     }
 
-    private Transaction getTransaction() {
-        try {
-            return transactionManager.getTransaction();
-        } catch (SystemException e) {
-            throw new TransactionalException(e);
+    private void throwNotAllowedStatus(final int currentStatus, final int... allowedStatuses) {
+        StringBuilder sb = new StringBuilder("Allowed status");
+        int n = allowedStatuses.length;
+        if (n == 1) {
+            sb.append(": ").append(TransactionConstants.STATUS_NAME_BY_CODE.get(allowedStatuses[0]));
+        } else {
+            sb.append("es: [");
+            for (int i = 0; i < n; i++) {
+                sb.append(TransactionConstants.STATUS_NAME_BY_CODE.get(allowedStatuses[i]));
+                if (i < (n - 1)) {
+                    sb.append(", ");
+                }
+            }
+            sb.append("]");
         }
+        sb.append("; Current status: ").append(TransactionConstants.STATUS_NAME_BY_CODE.get(currentStatus));
+
+        throw new TransactionalException(sb.toString());
     }
 
-    private int getStatus() {
-        try {
-            return transactionManager.getStatus();
-        } catch (SystemException e) {
-            throw new TransactionalException(e);
+    private void throwWrappedIfNotRuntimeOrOriginal(final Exception e) {
+        if (e instanceof RuntimeException) {
+            throw (RuntimeException) e;
         }
+        throw new TransactionalException(e);
     }
 }

@@ -27,6 +27,16 @@ public class TransactionalException extends RuntimeException {
     private static final long serialVersionUID = 7548858576510527613L;
 
     /**
+     * Constructs a new transaction helper exception with the specified message.
+     * 
+     * @param message
+     *            The message of the exception.
+     */
+    public TransactionalException(final String message) {
+        super(message);
+    }
+
+    /**
      * Constructs a new transaction helper exception with the specified detail message and cause.
      * 
      * @param msg
@@ -46,16 +56,6 @@ public class TransactionalException extends RuntimeException {
      */
     public TransactionalException(final Throwable cause) {
         super(cause);
-    }
-
-    /**
-     * Constructs a new transaction helper exception with the specified message.
-     * 
-     * @param message
-     *            The message of the exception.
-     */
-    public TransactionalException(String message) {
-        super(message);
     }
 
 }

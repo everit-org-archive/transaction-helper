@@ -29,7 +29,7 @@
   </parent>
 
   <artifactId>org.everit.osgi.transaction.helper.tests</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0</version>
 
   <packaging>bundle</packaging>
   <name>Everit - Transaction Helper Tests</name>
@@ -52,7 +52,7 @@
             <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
             <Import-Package>*</Import-Package>
             <Export-Package />
-            <EOSGi-TestNum>24</EOSGi-TestNum>
+            <EOSGi-TestNum>20</EOSGi-TestNum>
           </instructions>
         </configuration>
       </plugin>
@@ -84,7 +84,7 @@
         </executions>
         <configuration>
           <jacoco>
-            <includes>org.everit.osgi.transactin.helper.*</includes>
+            <includes>org.everit.osgi.transaction.helper.*</includes>
           </jacoco>
           <environments>
             <environment>
