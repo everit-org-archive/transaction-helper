@@ -1,25 +1,20 @@
-package org.everit.osgi.transaction.helper.tests;
-
-/*
- * Copyright (c) 2011, Everit Kft.
+/**
+ * This file is part of Everit - Transaction Helper Tests.
  *
- * All rights reserved.
+ * Everit - Transaction Helper Tests is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
+ * Everit - Transaction Helper Tests is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301  USA
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Everit - Transaction Helper Tests.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.everit.osgi.transaction.helper.tests;
 
 import javax.transaction.Status;
 import javax.transaction.xa.XAException;
@@ -39,7 +34,7 @@ public class RememberLastCallXAResource implements XAResource {
     /**
      * The resource status.
      */
-    private int status;
+    private int status = DEFAULT_STATUS;
 
     @Override
     public void commit(final Xid xid, final boolean onePhase) throws XAException {
@@ -53,7 +48,6 @@ public class RememberLastCallXAResource implements XAResource {
 
     @Override
     public void forget(final Xid xid) throws XAException {
-        status = DEFAULT_STATUS;
     }
 
     public int getStatus() {
@@ -62,25 +56,22 @@ public class RememberLastCallXAResource implements XAResource {
 
     @Override
     public int getTransactionTimeout() throws XAException {
-        status = DEFAULT_STATUS;
         return 0;
     }
 
     @Override
     public boolean isSameRM(final XAResource xares) throws XAException {
-        status = DEFAULT_STATUS;
         return true;
     }
 
     @Override
     public int prepare(final Xid xid) throws XAException {
-        status = DEFAULT_STATUS;
+        status = XAResourceStatus.STATUS_PREPARING;
         return 0;
     }
 
     @Override
     public Xid[] recover(final int flag) throws XAException {
-        status = DEFAULT_STATUS;
         return new Xid[0];
     }
 
@@ -91,7 +82,6 @@ public class RememberLastCallXAResource implements XAResource {
 
     @Override
     public boolean setTransactionTimeout(final int seconds) throws XAException {
-        status = DEFAULT_STATUS;
         return true;
     }
 
