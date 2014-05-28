@@ -30,7 +30,7 @@
 
   <groupId>org.everit.osgi</groupId>
   <artifactId>org.everit.osgi.transaction.helper</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
 
   <packaging>bundle</packaging>
   <name>Everit - Transaction Helper</name>

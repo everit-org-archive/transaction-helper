@@ -198,10 +198,10 @@ public class TransactionHelperComponent implements TransactionHelper {
     private void rollbackAndReThrow(final Exception thrownException) {
         try {
             transactionManager.rollback();
-            throwWrappedIfNotRuntimeOrOriginal(thrownException);
         } catch (Exception e) {
             throwExceptionOverException(thrownException, e);
         }
+        throwWrappedIfNotRuntimeOrOriginal(thrownException);
     }
 
     private void setRollbackOnly(final Transaction transaction, final RuntimeException thrownException) {
