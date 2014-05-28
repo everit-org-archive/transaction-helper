@@ -30,6 +30,7 @@ import org.apache.felix.scr.annotations.Properties;
 import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
+import org.everit.osgi.dev.testrunner.TestDuringDevelopment;
 import org.everit.osgi.transaction.helper.api.Callback;
 import org.everit.osgi.transaction.helper.api.TransactionHelper;
 import org.everit.osgi.transaction.helper.api.TransactionalException;
@@ -42,13 +43,14 @@ import org.junit.runners.MethodSorters;
  * Implementation of the {@link TransactionHelperTest}.
  */
 @Component(name = "TransactionHelperTest", immediate = true)
-@Service(TransactionHelperTestImpl.class)
+@Service(TransactionHelperTest.class)
 @Properties({
         @Property(name = "eosgi.testId", value = "transactionHelperTest"),
         @Property(name = "eosgi.testEngine", value = "junit4")
 })
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TransactionHelperTestImpl {
+@TestDuringDevelopment
+public class TransactionHelperTest {
 
     /**
      * The {@link TransactionHelper} instance.
@@ -288,7 +290,7 @@ public class TransactionHelperTestImpl {
         try {
             transactionHelper.mandatory(null);
             Assert.fail("Should have thrown an exception");
-        } catch (TransactionalException e) {
+        } catch (IllegalStateException e) {
             Assert.assertEquals("Allowed status: active; Current status: no_transaction", e.getMessage());
         }
     }
@@ -354,7 +356,7 @@ public class TransactionHelperTestImpl {
                         }
 
                     });
-                } catch (TransactionalException e) {
+                } catch (IllegalStateException e) {
                     Assert.assertEquals("Allowed status: no_transaction; Current status: active", e.getMessage());
                 }
                 return null;
@@ -521,6 +523,28 @@ public class TransactionHelperTestImpl {
             }
         });
         Assert.assertEquals(Status.STATUS_COMMITTED, lastTrStatus.getStatus());
+    }
+
+    @Test
+    @TestDuringDevelopment
+    public void _21_testExceptionSuppression() {
+        try {
+            transactionHelper.required(new Callback<Integer>() {
+
+                @Override
+                public Integer execute() {
+                    try {
+                        transactionManager.commit();
+                    } catch (Exception e) {
+                        Assert.fail(e.getMessage());
+                    }
+                    throw new NumberFormatException("Test exception");
+                }
+            });
+            Assert.fail("Exception should have been thrown");
+        } catch (NumberFormatException e) {
+            Assert.assertEquals("Test exception", e.getMessage());
+        }
     }
 
     private void assertTransactionStatus(final int expected) {

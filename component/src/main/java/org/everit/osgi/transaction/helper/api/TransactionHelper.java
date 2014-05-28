@@ -16,6 +16,8 @@
  */
 package org.everit.osgi.transaction.helper.api;
 
+import javax.transaction.Status;
+
 /**
  * TransactionHelper OSGi service can be used to manipulate transactions on the current thread. The methods of this
  * service can be used with normal Callback objects, anonymous classes or lambda expressions.
@@ -29,6 +31,8 @@ public interface TransactionHelper {
      * @param callback
      *            The callback instance will be called inside.
      * @return The result of the callback execution.
+     * @throws IllegalStateException
+     *             if there is no active transaction.
      */
     <R> R mandatory(Callback<R> callback);
 
@@ -38,6 +42,8 @@ public interface TransactionHelper {
      * @param callback
      *            The callback instance will be called inside.
      * @return The result of the callback execution.
+     * @throws IllegalStateException
+     *             if the status of the current thread is different from {@link Status#STATUS_NO_TRANSACTION}.
      */
     <R> R never(Callback<R> callback);
 
@@ -47,6 +53,9 @@ public interface TransactionHelper {
      * @param callback
      *            The callback instance will be called inside.
      * @return The result of the callback execution.
+     * @throws IllegalStateException
+     *             if the transaction status at the time of calling this function is neither
+     *             {@link Status#STATUS_ACTIVE} nor {@link Status#STATUS_NO_TRANSACTION}.
      */
     <R> R notSupported(Callback<R> callback);
 
@@ -58,6 +67,9 @@ public interface TransactionHelper {
      * @param callback
      *            The callback instance will be called inside.
      * @return The result of the callback execution.
+     * @throws IllegalStateException
+     *             if the transaction status at the time of calling this function is neither
+     *             {@link Status#STATUS_ACTIVE} nor {@link Status#STATUS_NO_TRANSACTION}.
      */
     <R> R required(Callback<R> callback);
 
@@ -79,6 +91,9 @@ public interface TransactionHelper {
      * @param callback
      *            The callback instance will be called inside.
      * @return The result of the callback execution.
+     * @throws IllegalStateException
+     *             if the transaction status at the time of calling this function is neither
+     *             {@link Status#STATUS_ACTIVE} nor {@link Status#STATUS_NO_TRANSACTION}.
      */
     <R> R supports(Callback<R> callback);
 

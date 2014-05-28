@@ -67,7 +67,7 @@ public class TransactionHelperComponent implements TransactionHelper {
         R result = null;
 
         try {
-            result = doInOngoingTransaction(callback);
+            result = callback.execute();
         } catch (RuntimeException e) {
             rollbackAndReThrow(e);
         }
@@ -191,7 +191,11 @@ public class TransactionHelperComponent implements TransactionHelper {
         try {
             transactionManager.resume(transaction);
         } catch (Exception e) {
-            throwExceptionOverException(thrownException, e);
+            if (thrownException != null) {
+                suppressException(thrownException, e);
+            } else {
+                throwWrappedIfNotRuntimeOrOriginal(e);
+            }
         }
     }
 
@@ -199,16 +203,16 @@ public class TransactionHelperComponent implements TransactionHelper {
         try {
             transactionManager.rollback();
         } catch (Exception e) {
-            throwExceptionOverException(thrownException, e);
+            suppressException(thrownException, e);
         }
         throwWrappedIfNotRuntimeOrOriginal(thrownException);
     }
 
-    private void setRollbackOnly(final Transaction transaction, final RuntimeException thrownException) {
+    private void setRollbackOnly(final Transaction transaction, Throwable thrownException) {
         try {
             transaction.setRollbackOnly();
         } catch (Exception e) {
-            throwExceptionOverException(thrownException, e);
+            suppressException(thrownException, e);
         }
     }
 
@@ -230,15 +234,8 @@ public class TransactionHelperComponent implements TransactionHelper {
         }
     }
 
-    private void throwExceptionOverException(final Exception previousException, final Exception newException) {
-        if (previousException != null) {
-            logService
-                    .log(LogService.LOG_ERROR,
-                            "Exception was thrown over a previous one. Previous one is logged, new one is rethrown",
-                            previousException);
-        }
-
-        throwWrappedIfNotRuntimeOrOriginal(newException);
+    private void suppressException(final Throwable originalException, final Throwable suppressedException) {
+        logService.log(LogService.LOG_ERROR, "Suppressed exception", suppressedException);
     }
 
     private void throwNotAllowedStatus(final int currentStatus, final int... allowedStatuses) {
@@ -258,7 +255,7 @@ public class TransactionHelperComponent implements TransactionHelper {
         }
         sb.append("; Current status: ").append(TransactionConstants.STATUS_NAME_BY_CODE.get(currentStatus));
 
-        throw new TransactionalException(sb.toString());
+        throw new IllegalStateException(sb.toString());
     }
 
     private void throwWrappedIfNotRuntimeOrOriginal(final Exception e) {
