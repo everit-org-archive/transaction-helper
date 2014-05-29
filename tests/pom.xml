@@ -36,8 +36,8 @@
   <description>Everit - Transaction Helper Tests</description>
 
   <properties>
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
   </properties>
 
   <build>
@@ -52,7 +52,7 @@
             <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
             <Import-Package>*</Import-Package>
             <Export-Package />
-            <EOSGi-TestNum>22</EOSGi-TestNum>
+            <EOSGi-TestNum>24</EOSGi-TestNum>
           </instructions>
         </configuration>
       </plugin>
@@ -68,6 +68,13 @@
             </goals>
           </execution>
         </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-all</artifactId>
+            <version>5.0.3</version>
+          </dependency>
+        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.everit.osgi.dev</groupId>
@@ -166,7 +173,7 @@
       <artifactId>org.apache.felix.eventadmin</artifactId>
       <version>1.3.2</version>
     </dependency>
-    
+
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
