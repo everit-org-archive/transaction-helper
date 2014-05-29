@@ -55,6 +55,10 @@ public class TransactionHelperComponent implements TransactionHelper {
         this.transactionManager = transactionManager;
     }
 
+    public void bindLogService(LogService logService) {
+        this.logService = logService;
+    }
+
     private <R> R doInNewTransaction(final Callback<R> callback) {
         try {
             transactionManager.begin();
