@@ -8,8 +8,18 @@ transaction propagation in the code. The component registers the
 TransactionHelper OSGi service that has the well known propagation
 functions (requires, requiresNew, never, ...).
 
+## Examples
 
-## Example Usage (Java 6 and Java 7)
+### Java 5
+
+    Integer result = transactionHelper.requiresNew(new Callback<Integer>() {
+
+        public Integer execute() {
+            // Do some stuff in the new transaction
+        }
+    });
+
+### Java 6 and Java 7
 
     Integer result = transactionHelper.requiresNew(new Callback<Integer>() {
 
@@ -19,7 +29,7 @@ functions (requires, requiresNew, never, ...).
         }
     });
 
-## Example Usage (Java 8)
+### Java 8 and above
 
     Integer result = transactionHelper.requiresNew(() -> {
         // Do some stuff in the new transaction
