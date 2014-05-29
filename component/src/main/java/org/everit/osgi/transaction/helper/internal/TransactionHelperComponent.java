@@ -187,8 +187,10 @@ public class TransactionHelperComponent implements TransactionHelper {
         } catch (Exception e) {
             if (thrownException != null) {
                 suppressException(thrownException, e);
+                throw thrownException;
+            } else {
+                throwWrappedIfNotRuntimeOrOriginal(e);
             }
-            throw thrownException;
         }
     }
 
@@ -201,7 +203,7 @@ public class TransactionHelperComponent implements TransactionHelper {
         throw thrownException;
     }
 
-    private void setRollbackOnly(final Transaction transaction, RuntimeException thrownException) {
+    private void setRollbackOnly(final Transaction transaction, final RuntimeException thrownException) {
         try {
             transaction.setRollbackOnly();
         } catch (Exception e) {
