@@ -52,6 +52,14 @@ component.
     Integer result = transactionHelper.requiresNew(() -> {
         // Do some stuff in the new transaction
     });
+    
+## Usage without OSGi
+
+There is a component in the bundle that registers TransactionHelper as an
+OSGi service. However, it is possible to use the solution without OSGi, as
+TransactionHelperImpl can be instantiated with any technology. After
+instantiation, the transactionManager of the framework must be provided
+for the TransactionHelperImpl via its setter method.
 
 ## Why not annotations, interceptors or other magic?
 
