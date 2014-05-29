@@ -28,6 +28,8 @@ public interface TransactionHelper {
      * Support a current transaction, throw an exception if none exists. In case there is an exception in the callback,
      * the transaction status is set to MARKED_ROLLBACK.
      * 
+     * @param <R>
+     *            Return type.
      * @param callback
      *            The callback instance will be called inside.
      * @return The result of the callback execution.
@@ -39,6 +41,8 @@ public interface TransactionHelper {
     /**
      * Execute non-transactionally, throw an exception if a transaction exists.
      * 
+     * @param <R>
+     *            Return type.
      * @param callback
      *            The callback instance will be called inside.
      * @return The result of the callback execution.
@@ -50,6 +54,8 @@ public interface TransactionHelper {
     /**
      * Execute non-transactionally, suspend the current transaction if one exists.
      * 
+     * @param <R>
+     *            Return type.
      * @param callback
      *            The callback instance will be called inside.
      * @return The result of the callback execution.
@@ -64,6 +70,8 @@ public interface TransactionHelper {
      * the function call created the transaction, the transaction will be rollbacked. In case there is an exception and
      * there was already a transaction when the method was called, the transaction status is set to MARKED_ROLLBACK.
      * 
+     * @param <R>
+     *            Return type.
      * @param callback
      *            The callback instance will be called inside.
      * @return The result of the callback execution.
@@ -77,6 +85,8 @@ public interface TransactionHelper {
      * Create a new transaction, suspend the current transaction if one exists. In case there is an exception, the newly
      * created transaction will be rolled back.
      * 
+     * @param <R>
+     *            Return type.
      * @param callback
      *            The callback instance will be called inside.
      * @return The result of the callback execution.
@@ -88,6 +98,8 @@ public interface TransactionHelper {
      * the time calling the function and the callback throws an exception, the transaction status will be
      * MARKED_ROLLBACK.
      * 
+     * @param <R>
+     *            Return type.
      * @param callback
      *            The callback instance will be called inside.
      * @return The result of the callback execution.

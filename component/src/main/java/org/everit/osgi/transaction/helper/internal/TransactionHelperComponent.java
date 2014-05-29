@@ -134,19 +134,16 @@ public class TransactionHelperComponent implements TransactionHelper {
         }
     }
 
-    @Override
     public <R> R mandatory(final Callback<R> callback) {
         forceTransactionStatus(Status.STATUS_ACTIVE);
         return doInOngoingTransaction(callback);
     }
 
-    @Override
     public <R> R never(final Callback<R> callback) {
         forceTransactionStatus(Status.STATUS_NO_TRANSACTION);
         return callback.execute();
     }
 
-    @Override
     public <R> R notSupported(final Callback<R> callback) {
         int status = getStatus();
         if (Status.STATUS_NO_TRANSACTION == status) {
@@ -160,7 +157,6 @@ public class TransactionHelperComponent implements TransactionHelper {
         return doInSuspended(callback);
     }
 
-    @Override
     public <R> R required(final Callback<R> callback) {
         int status = getStatus();
         if (Status.STATUS_ACTIVE == status) {
@@ -172,7 +168,6 @@ public class TransactionHelperComponent implements TransactionHelper {
         return doInNewTransaction(callback);
     }
 
-    @Override
     public <R> R requiresNew(final Callback<R> callback) {
         int status = getStatus();
         if (Status.STATUS_NO_TRANSACTION == status) {
@@ -180,7 +175,6 @@ public class TransactionHelperComponent implements TransactionHelper {
         }
         return doInSuspended(new Callback<R>() {
 
-            @Override
             public R execute() {
                 return doInNewTransaction(callback);
             }
@@ -193,30 +187,29 @@ public class TransactionHelperComponent implements TransactionHelper {
         } catch (Exception e) {
             if (thrownException != null) {
                 suppressException(thrownException, e);
-            } else {
-                throwWrappedIfNotRuntimeOrOriginal(e);
             }
+            throw thrownException;
         }
     }
 
-    private void rollbackAndReThrow(final Exception thrownException) {
+    private void rollbackAndReThrow(final RuntimeException thrownException) {
         try {
             transactionManager.rollback();
         } catch (Exception e) {
             suppressException(thrownException, e);
         }
-        throwWrappedIfNotRuntimeOrOriginal(thrownException);
+        throw thrownException;
     }
 
-    private void setRollbackOnly(final Transaction transaction, Throwable thrownException) {
+    private void setRollbackOnly(final Transaction transaction, RuntimeException thrownException) {
         try {
             transaction.setRollbackOnly();
         } catch (Exception e) {
             suppressException(thrownException, e);
         }
+        throw thrownException;
     }
 
-    @Override
     public <R> R supports(final Callback<R> callback) {
         int status = getStatus();
         if (Status.STATUS_NO_TRANSACTION == status) {

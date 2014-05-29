@@ -49,7 +49,6 @@ import org.junit.runners.MethodSorters;
         @Property(name = "eosgi.testEngine", value = "junit4")
 })
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@TestDuringDevelopment
 public class TransactionHelperTest {
 
     /**
@@ -526,7 +525,6 @@ public class TransactionHelperTest {
     }
 
     @Test
-    @TestDuringDevelopment
     public void _21_testExceptionSuppression() {
         try {
             transactionHelper.required(new Callback<Integer>() {
@@ -544,6 +542,28 @@ public class TransactionHelperTest {
             Assert.fail("Exception should have been thrown");
         } catch (NumberFormatException e) {
             Assert.assertEquals("Test exception", e.getMessage());
+        }
+    }
+
+    @Test
+    @TestDuringDevelopment
+    public void _22_testExceptionDuringCommit() {
+        try {
+            transactionHelper.required(new Callback<Integer>() {
+
+                @Override
+                public Integer execute() {
+                    try {
+                        transactionManager.commit();
+                    } catch (Exception e) {
+                        Assert.fail(e.getMessage());
+                    }
+                    return 1;
+                }
+            });
+            Assert.fail("Exception should have been thrown");
+        } catch (Exception e) {
+            Assert.assertEquals(IllegalStateException.class, e.getClass());
         }
     }
 
