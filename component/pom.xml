@@ -92,7 +92,7 @@
               *
             </Import-Package>
             <Export-Package>
-              ${project.artifactId}.api
+              ${project.artifactId}.api;version="1.0.0"
             </Export-Package>
           </instructions>
         </configuration>
