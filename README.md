@@ -8,6 +8,24 @@ transaction propagation in the code. The component registers the
 TransactionHelper OSGi service that has the well known propagation
 functions (requires, requiresNew, never, ...).
 
+## Differences between versions
+
+### Version 1.0.1
+
+The versions 1.0.x (starting with 1.0.1) are Java 5 compatible. When
+an exception occures during a rollback or setRollbackOnly, that exception
+is logged with LogService.
+
+### Version 1.1.x and above
+
+These versions use Throwable.addSuppressed(Throwable) function if an
+exception occures during rollback or setRollbackOnly. As throwable
+suppressions are only available since Java 7, these versions are compiled
+to be compatible with Java 7 and above.
+
+From version 1.1.0 no LogService is necessary to use the TransactionHelper
+component.
+
 ## Examples
 
 ### Java 5

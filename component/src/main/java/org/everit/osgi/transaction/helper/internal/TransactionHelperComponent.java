@@ -32,18 +32,14 @@ import org.everit.osgi.transaction.helper.api.Callback;
 import org.everit.osgi.transaction.helper.api.TransactionConstants;
 import org.everit.osgi.transaction.helper.api.TransactionHelper;
 import org.everit.osgi.transaction.helper.api.TransactionalException;
-import org.osgi.service.log.LogService;
 
 /**
  * Implementation of {@link TransactionHelper}.
  */
 @Component(name = "org.everit.osgi.transaction.helper.TransactionHelper", metatype = true)
-@Properties({ @Property(name = "transactionManager.target"), @Property(name = "logService.target") })
+@Properties({ @Property(name = "transactionManager.target") })
 @Service(value = TransactionHelper.class)
 public class TransactionHelperComponent implements TransactionHelper {
-
-    @Reference
-    private LogService logService;
 
     /**
      * The {@link TransactionManager} instance.
@@ -53,10 +49,6 @@ public class TransactionHelperComponent implements TransactionHelper {
 
     protected void bindTransactionManager(final TransactionManager transactionManager) {
         this.transactionManager = transactionManager;
-    }
-
-    public void bindLogService(LogService logService) {
-        this.logService = logService;
     }
 
     private <R> R doInNewTransaction(final Callback<R> callback) {
@@ -138,16 +130,19 @@ public class TransactionHelperComponent implements TransactionHelper {
         }
     }
 
+    @Override
     public <R> R mandatory(final Callback<R> callback) {
         forceTransactionStatus(Status.STATUS_ACTIVE);
         return doInOngoingTransaction(callback);
     }
 
+    @Override
     public <R> R never(final Callback<R> callback) {
         forceTransactionStatus(Status.STATUS_NO_TRANSACTION);
         return callback.execute();
     }
 
+    @Override
     public <R> R notSupported(final Callback<R> callback) {
         int status = getStatus();
         if (Status.STATUS_NO_TRANSACTION == status) {
@@ -161,6 +156,7 @@ public class TransactionHelperComponent implements TransactionHelper {
         return doInSuspended(callback);
     }
 
+    @Override
     public <R> R required(final Callback<R> callback) {
         int status = getStatus();
         if (Status.STATUS_ACTIVE == status) {
@@ -172,6 +168,7 @@ public class TransactionHelperComponent implements TransactionHelper {
         return doInNewTransaction(callback);
     }
 
+    @Override
     public <R> R requiresNew(final Callback<R> callback) {
         int status = getStatus();
         if (Status.STATUS_NO_TRANSACTION == status) {
@@ -179,6 +176,7 @@ public class TransactionHelperComponent implements TransactionHelper {
         }
         return doInSuspended(new Callback<R>() {
 
+            @Override
             public R execute() {
                 return doInNewTransaction(callback);
             }
@@ -216,6 +214,7 @@ public class TransactionHelperComponent implements TransactionHelper {
         throw thrownException;
     }
 
+    @Override
     public <R> R supports(final Callback<R> callback) {
         int status = getStatus();
         if (Status.STATUS_NO_TRANSACTION == status) {
@@ -234,7 +233,7 @@ public class TransactionHelperComponent implements TransactionHelper {
     }
 
     private void suppressException(final Throwable originalException, final Throwable suppressedException) {
-        logService.log(LogService.LOG_ERROR, "Suppressed exception", suppressedException);
+        originalException.addSuppressed(suppressedException);
     }
 
     private void throwNotAllowedStatus(final int currentStatus, final int... allowedStatuses) {

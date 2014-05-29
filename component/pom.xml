@@ -30,7 +30,7 @@
 
   <groupId>org.everit.osgi</groupId>
   <artifactId>org.everit.osgi.transaction.helper</artifactId>
-  <version>1.0.1</version>
+  <version>1.1.0</version>
 
   <packaging>bundle</packaging>
   <name>Everit - Transaction Helper</name>
@@ -38,8 +38,8 @@
 
   <properties>
     <projectpath>transaction-helper</projectpath>
-    <maven.compiler.source>1.5</maven.compiler.source>
-    <maven.compiler.target>1.5</maven.compiler.target>
+    <maven.compiler.source>1.7</maven.compiler.source>
+    <maven.compiler.target>1.7</maven.compiler.target>
   </properties>
 
   <scm>

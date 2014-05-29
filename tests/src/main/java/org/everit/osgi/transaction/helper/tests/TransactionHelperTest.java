@@ -434,6 +434,7 @@ public class TransactionHelperTest {
             Assert.fail("Exception should have been thrown");
         } catch (Exception e) {
             Assert.assertEquals(IllegalStateException.class, e.getClass());
+            Assert.assertEquals(0, e.getSuppressed().length);
         }
     }
 
@@ -453,11 +454,30 @@ public class TransactionHelperTest {
             Assert.fail("Exception should have been thrown");
         } catch (Exception e) {
             Assert.assertEquals(IllegalStateException.class, e.getClass());
+            Assert.assertEquals(0, e.getSuppressed().length);
         }
     }
 
     @Test
-    public void _24_testSuppressionDuringResume() {
+    public void _24_testSuppressionDuringCommit() {
+        try {
+            transactionHelper.required(() -> {
+                try {
+                    transactionManager.commit();
+                } catch (Exception e) {
+                    Assert.fail(e.getMessage());
+                }
+                throw new NumberFormatException();
+            });
+            Assert.fail("Exception should have been thrown");
+        } catch (Exception e) {
+            Assert.assertEquals(NumberFormatException.class, e.getClass());
+            Assert.assertEquals(1, e.getSuppressed().length);
+        }
+    }
+
+    @Test
+    public void _25_testSuppressionDuringResume() {
         try {
             transactionHelper.required(() -> {
                 return (Integer) transactionHelper.requiresNew(() -> {
@@ -472,6 +492,7 @@ public class TransactionHelperTest {
             Assert.fail("Exception should have been thrown");
         } catch (Exception e) {
             Assert.assertEquals(NumberFormatException.class, e.getClass());
+            Assert.assertEquals(1, e.getSuppressed().length);
         }
     }
 

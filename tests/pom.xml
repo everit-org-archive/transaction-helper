@@ -29,7 +29,7 @@
   </parent>
 
   <artifactId>org.everit.osgi.transaction.helper.tests</artifactId>
-  <version>1.0.1</version>
+  <version>1.1.0</version>
 
   <packaging>bundle</packaging>
   <name>Everit - Transaction Helper Tests</name>
@@ -52,7 +52,7 @@
             <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
             <Import-Package>*</Import-Package>
             <Export-Package />
-            <EOSGi-TestNum>24</EOSGi-TestNum>
+            <EOSGi-TestNum>25</EOSGi-TestNum>
           </instructions>
         </configuration>
       </plugin>
