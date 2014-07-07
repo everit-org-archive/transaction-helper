@@ -16,6 +16,8 @@
  */
 package org.everit.osgi.transaction.helper.api;
 
+import java.util.function.Supplier;
+
 import javax.transaction.Status;
 
 /**
@@ -36,7 +38,7 @@ public interface TransactionHelper {
      * @throws IllegalStateException
      *             if there is no active transaction.
      */
-    <R> R mandatory(Callback<R> callback);
+    <R> R mandatory(Supplier<R> callback);
 
     /**
      * Execute non-transactionally, throw an exception if a transaction exists.
@@ -49,7 +51,7 @@ public interface TransactionHelper {
      * @throws IllegalStateException
      *             if the status of the current thread is different from {@link Status#STATUS_NO_TRANSACTION}.
      */
-    <R> R never(Callback<R> callback);
+    <R> R never(Supplier<R> callback);
 
     /**
      * Execute non-transactionally, suspend the current transaction if one exists.
@@ -63,7 +65,7 @@ public interface TransactionHelper {
      *             if the transaction status at the time of calling this function is neither
      *             {@link Status#STATUS_ACTIVE} nor {@link Status#STATUS_NO_TRANSACTION}.
      */
-    <R> R notSupported(Callback<R> callback);
+    <R> R notSupported(Supplier<R> callback);
 
     /**
      * Support a current transaction, create a new one if none exists. In case there is an exception in the callback and
@@ -79,7 +81,7 @@ public interface TransactionHelper {
      *             if the transaction status at the time of calling this function is neither
      *             {@link Status#STATUS_ACTIVE} nor {@link Status#STATUS_NO_TRANSACTION}.
      */
-    <R> R required(Callback<R> callback);
+    <R> R required(Supplier<R> callback);
 
     /**
      * Create a new transaction, suspend the current transaction if one exists. In case there is an exception, the newly
@@ -91,7 +93,7 @@ public interface TransactionHelper {
      *            The callback instance will be called inside.
      * @return The result of the callback execution.
      */
-    <R> R requiresNew(Callback<R> callback);
+    <R> R requiresNew(Supplier<R> callback);
 
     /**
      * Support a current transaction, execute non-transactionally if none exists. If there was an ACTIVE transaction at
@@ -107,6 +109,6 @@ public interface TransactionHelper {
      *             if the transaction status at the time of calling this function is neither
      *             {@link Status#STATUS_ACTIVE} nor {@link Status#STATUS_NO_TRANSACTION}.
      */
-    <R> R supports(Callback<R> callback);
+    <R> R supports(Supplier<R> callback);
 
 }

@@ -16,13 +16,14 @@
  */
 package org.everit.osgi.transaction.helper.internal;
 
+import java.util.function.Supplier;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
-import org.everit.osgi.transaction.helper.api.Callback;
 import org.everit.osgi.transaction.helper.api.TransactionConstants;
 import org.everit.osgi.transaction.helper.api.TransactionHelper;
 import org.everit.osgi.transaction.helper.api.TransactionalException;
@@ -31,7 +32,7 @@ public class TransactionHelperImpl implements TransactionHelper {
 
     private TransactionManager transactionManager;
 
-    private <R> R doInNewTransaction(final Callback<R> callback) {
+    private <R> R doInNewTransaction(final Supplier<R> callback) {
         try {
             transactionManager.begin();
         } catch (NotSupportedException e) {
@@ -43,7 +44,7 @@ public class TransactionHelperImpl implements TransactionHelper {
         R result = null;
 
         try {
-            result = callback.execute();
+            result = callback.get();
         } catch (RuntimeException e) {
             rollbackAndReThrow(e);
         }
@@ -58,17 +59,17 @@ public class TransactionHelperImpl implements TransactionHelper {
         return result;
     }
 
-    private <R> R doInOngoingTransaction(final Callback<R> callback) {
+    private <R> R doInOngoingTransaction(final Supplier<R> callback) {
         Transaction transaction = getTransaction();
         try {
-            return callback.execute();
+            return callback.get();
         } catch (RuntimeException e) {
             setRollbackOnly(transaction, e);
             throw e;
         }
     }
 
-    private <R> R doInSuspended(final Callback<R> callback) {
+    private <R> R doInSuspended(final Supplier<R> callback) {
         Transaction transaction = getTransaction();
         try {
             transactionManager.suspend();
@@ -78,7 +79,7 @@ public class TransactionHelperImpl implements TransactionHelper {
 
         RuntimeException thrownException = null;
         try {
-            return callback.execute();
+            return callback.get();
         } catch (RuntimeException e) {
             thrownException = e;
             throw e;
@@ -111,22 +112,22 @@ public class TransactionHelperImpl implements TransactionHelper {
     }
 
     @Override
-    public <R> R mandatory(final Callback<R> callback) {
+    public <R> R mandatory(final Supplier<R> callback) {
         forceTransactionStatus(Status.STATUS_ACTIVE);
         return doInOngoingTransaction(callback);
     }
 
     @Override
-    public <R> R never(final Callback<R> callback) {
+    public <R> R never(final Supplier<R> callback) {
         forceTransactionStatus(Status.STATUS_NO_TRANSACTION);
-        return callback.execute();
+        return callback.get();
     }
 
     @Override
-    public <R> R notSupported(final Callback<R> callback) {
+    public <R> R notSupported(final Supplier<R> callback) {
         int status = getStatus();
         if (Status.STATUS_NO_TRANSACTION == status) {
-            return callback.execute();
+            return callback.get();
         }
 
         if (status != Status.STATUS_ACTIVE) {
@@ -137,7 +138,7 @@ public class TransactionHelperImpl implements TransactionHelper {
     }
 
     @Override
-    public <R> R required(final Callback<R> callback) {
+    public <R> R required(final Supplier<R> callback) {
         int status = getStatus();
         if (Status.STATUS_ACTIVE == status) {
             return doInOngoingTransaction(callback);
@@ -149,15 +150,15 @@ public class TransactionHelperImpl implements TransactionHelper {
     }
 
     @Override
-    public <R> R requiresNew(final Callback<R> callback) {
+    public <R> R requiresNew(final Supplier<R> callback) {
         int status = getStatus();
         if (Status.STATUS_NO_TRANSACTION == status) {
             return doInNewTransaction(callback);
         }
-        return doInSuspended(new Callback<R>() {
+        return doInSuspended(new Supplier<R>() {
 
             @Override
-            public R execute() {
+            public R get() {
                 return doInNewTransaction(callback);
             }
         });
@@ -199,17 +200,17 @@ public class TransactionHelperImpl implements TransactionHelper {
     }
 
     @Override
-    public <R> R supports(final Callback<R> callback) {
+    public <R> R supports(final Supplier<R> callback) {
         int status = getStatus();
         if (Status.STATUS_NO_TRANSACTION == status) {
-            return callback.execute();
+            return callback.get();
         }
         if (Status.STATUS_ACTIVE != status) {
             throwNotAllowedStatus(status, Status.STATUS_ACTIVE, Status.STATUS_NO_TRANSACTION);
         }
         Transaction transaction = getTransaction();
         try {
-            return callback.execute();
+            return callback.get();
         } catch (RuntimeException e) {
             setRollbackOnly(transaction, e);
             throw e;
@@ -224,7 +225,8 @@ public class TransactionHelperImpl implements TransactionHelper {
         StringBuilder sb = new StringBuilder("Allowed status");
         int n = allowedStatuses.length;
         if (n == 1) {
-            sb.append(": ").append(TransactionConstants.STATUS_NAME_BY_CODE.get(allowedStatuses[0]));
+            sb.append(": ").append(
+                    TransactionConstants.STATUS_NAME_BY_CODE.get(allowedStatuses[0]));
         } else {
             sb.append("es: [");
             for (int i = 0; i < n; i++) {
