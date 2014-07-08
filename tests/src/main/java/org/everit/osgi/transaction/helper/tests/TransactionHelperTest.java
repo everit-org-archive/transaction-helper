@@ -43,8 +43,8 @@ import org.junit.runners.MethodSorters;
 @Component(name = "TransactionHelperTest", immediate = true)
 @Service(TransactionHelperTest.class)
 @Properties({
-        @Property(name = "eosgi.testId", value = "transactionHelperTest"),
-        @Property(name = "eosgi.testEngine", value = "junit4")
+    @Property(name = "eosgi.testId", value = "transactionHelperTest"),
+    @Property(name = "eosgi.testEngine", value = "junit4")
 })
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TransactionHelperTest {
@@ -442,7 +442,7 @@ public class TransactionHelperTest {
     public void _23_testExceptionDuringResume() {
         try {
             transactionHelper.required(() -> {
-                return (Integer) transactionHelper.requiresNew(() -> {
+                return transactionHelper.requiresNew(() -> {
                     try {
                         transactionManager.commit();
                     } catch (Exception e) {

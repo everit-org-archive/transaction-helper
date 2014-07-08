@@ -16,6 +16,8 @@
  */
 package org.everit.osgi.transaction.helper.internal;
 
+import java.util.function.Supplier;
+
 import javax.transaction.TransactionManager;
 
 import org.apache.felix.scr.annotations.Component;
@@ -24,7 +26,6 @@ import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferencePolicy;
 import org.apache.felix.scr.annotations.Service;
-import org.everit.osgi.transaction.helper.api.Callback;
 import org.everit.osgi.transaction.helper.api.TransactionHelper;
 
 /**
@@ -33,43 +34,43 @@ import org.everit.osgi.transaction.helper.api.TransactionHelper;
 @Component(name = "org.everit.osgi.transaction.helper.TransactionHelper", metatype = true)
 @Properties({ @Property(name = "transactionManager.target") })
 @Service(value = TransactionHelper.class)
-@Reference(name = "transactionManager", referenceInterface = TransactionManager.class,
-        policy = ReferencePolicy.STATIC)
+@Reference(name = "transactionManager", referenceInterface = TransactionManager.class, policy = ReferencePolicy.STATIC,
+bind = "setTransactionManager")
 public class TransactionHelperComponent implements TransactionHelper {
 
     TransactionHelperImpl wrapped = new TransactionHelperImpl();
 
-    protected void bindTransactionManager(final TransactionManager transactionManager) {
-        wrapped.setTransactionManager(transactionManager);
-    }
-
     @Override
-    public <R> R mandatory(Callback<R> callback) {
+    public <R> R mandatory(final Supplier<R> callback) {
         return wrapped.mandatory(callback);
     }
 
     @Override
-    public <R> R never(Callback<R> callback) {
+    public <R> R never(final Supplier<R> callback) {
         return wrapped.never(callback);
     }
 
     @Override
-    public <R> R notSupported(Callback<R> callback) {
+    public <R> R notSupported(final Supplier<R> callback) {
         return wrapped.notSupported(callback);
     }
 
     @Override
-    public <R> R required(Callback<R> callback) {
+    public <R> R required(final Supplier<R> callback) {
         return wrapped.required(callback);
     }
 
     @Override
-    public <R> R requiresNew(Callback<R> callback) {
+    public <R> R requiresNew(final Supplier<R> callback) {
         return wrapped.requiresNew(callback);
     }
 
+    protected void setTransactionManager(final TransactionManager transactionManager) {
+        wrapped.setTransactionManager(transactionManager);
+    }
+
     @Override
-    public <R> R supports(Callback<R> callback) {
+    public <R> R supports(final Supplier<R> callback) {
         return wrapped.supports(callback);
     }
 
