@@ -34,14 +34,11 @@ import org.everit.osgi.transaction.helper.api.TransactionHelper;
 @Component(name = "org.everit.osgi.transaction.helper.TransactionHelper", metatype = true)
 @Properties({ @Property(name = "transactionManager.target") })
 @Service(value = TransactionHelper.class)
-@Reference(name = "transactionManager", referenceInterface = TransactionManager.class, policy = ReferencePolicy.STATIC)
+@Reference(name = "transactionManager", referenceInterface = TransactionManager.class, policy = ReferencePolicy.STATIC,
+bind = "setTransactionManager")
 public class TransactionHelperComponent implements TransactionHelper {
 
     TransactionHelperImpl wrapped = new TransactionHelperImpl();
-
-    protected void bindTransactionManager(final TransactionManager transactionManager) {
-        wrapped.setTransactionManager(transactionManager);
-    }
 
     @Override
     public <R> R mandatory(final Supplier<R> callback) {
@@ -66,6 +63,10 @@ public class TransactionHelperComponent implements TransactionHelper {
     @Override
     public <R> R requiresNew(final Supplier<R> callback) {
         return wrapped.requiresNew(callback);
+    }
+
+    protected void setTransactionManager(final TransactionManager transactionManager) {
+        wrapped.setTransactionManager(transactionManager);
     }
 
     @Override
