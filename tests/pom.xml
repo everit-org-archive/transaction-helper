@@ -25,10 +25,11 @@
   <parent>
     <groupId>org.everit.osgi</groupId>
     <artifactId>org.everit.osgi.transaction.helper.parent</artifactId>
-    <version>2.0.0</version>
+    <version>1.0.0</version>
   </parent>
 
   <artifactId>org.everit.osgi.transaction.helper.tests</artifactId>
+  <version>2.0.0</version>
 
   <packaging>bundle</packaging>
   <name>Everit - Transaction Helper Tests</name>
