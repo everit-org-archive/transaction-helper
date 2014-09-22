@@ -99,3 +99,5 @@ does the weaving is started before your bundle that should be weaved?
 Is it so much to ask to use an anonymous class? There will be more code, but
 still the code will be much more clear! It will be yours. With Java 8, the
 code will be even more nice if you use lambda expressions.
+
+[![Analytics](https://ga-beacon.appspot.com/UA-15041869-4/everit-org/transaction-helper)](https://github.com/igrigorik/ga-beacon)
