@@ -47,17 +47,17 @@ public class TransactionHelperImpl implements TransactionHelper {
 
     try {
       result = callback.get();
-    } catch (RuntimeException e) {
+    } catch (Throwable e) {
       rollbackAndReThrow(e);
     }
 
     try {
       transactionManager.commit();
-    } catch (Exception e) {
+    } catch (Throwable e) {
       // No rollback is necessary here as if there was an exception during calling commit, the
       // transaction is
       // either rolled back or there is no transaction to roll back.
-      throwWrappedIfNotRuntimeOrOriginal(e);
+      throwOriginalIfUncheckedOrWrapped(e);
     }
     return result;
   }
@@ -66,9 +66,9 @@ public class TransactionHelperImpl implements TransactionHelper {
     Transaction transaction = getTransaction();
     try {
       return callback.get();
-    } catch (RuntimeException e) {
+    } catch (Throwable e) {
       setRollbackOnly(transaction, e);
-      throw e;
+      return null;
     }
   }
 
@@ -84,9 +84,9 @@ public class TransactionHelperImpl implements TransactionHelper {
       R result = callback.get();
       resume(transaction, null);
       return result;
-    } catch (RuntimeException e) {
+    } catch (Throwable e) {
       resume(transaction, e);
-      throw e;
+      return null;
     }
   }
 
@@ -166,35 +166,35 @@ public class TransactionHelperImpl implements TransactionHelper {
     });
   }
 
-  private void resume(final Transaction transaction, final RuntimeException thrownException) {
+  private void resume(final Transaction transaction, final Throwable thrownThrowable) {
     try {
       transactionManager.resume(transaction);
-    } catch (Exception e) {
-      if (thrownException != null) {
-        suppressException(thrownException, e);
+    } catch (Throwable e) {
+      if (thrownThrowable != null) {
+        suppressThrowable(thrownThrowable, e);
       } else {
-        throwWrappedIfNotRuntimeOrOriginal(e);
+        throwOriginalIfUncheckedOrWrapped(e);
       }
     }
   }
 
-  private void rollbackAndReThrow(final RuntimeException thrownException) {
+  private void rollbackAndReThrow(final Throwable thrownThrowable) {
     try {
       transactionManager.rollback();
-    } catch (Exception e) {
-      suppressException(thrownException, e);
+    } catch (Throwable e) {
+      suppressThrowable(thrownThrowable, e);
     }
-    throw thrownException;
+    throwOriginalIfUncheckedOrWrapped(thrownThrowable);
   }
 
   private void setRollbackOnly(final Transaction transaction,
-      final RuntimeException thrownException) {
+      final Throwable thrownThrowable) {
     try {
       transaction.setRollbackOnly();
-    } catch (Exception e) {
-      suppressException(thrownException, e);
+    } catch (Throwable e) {
+      suppressThrowable(thrownThrowable, e);
     }
-    throw thrownException;
+    throwOriginalIfUncheckedOrWrapped(thrownThrowable);
   }
 
   public void setTransactionManager(final TransactionManager transactionManager) {
@@ -213,15 +213,15 @@ public class TransactionHelperImpl implements TransactionHelper {
     Transaction transaction = getTransaction();
     try {
       return callback.get();
-    } catch (RuntimeException e) {
+    } catch (Throwable e) {
       setRollbackOnly(transaction, e);
-      throw e;
+      return null;
     }
   }
 
-  private void suppressException(final Throwable originalException,
-      final Throwable suppressedException) {
-    originalException.addSuppressed(suppressedException);
+  private void suppressThrowable(final Throwable originalThrowable,
+      final Throwable suppressedThrowable) {
+    originalThrowable.addSuppressed(suppressedThrowable);
   }
 
   private void throwNotAllowedStatus(final int currentStatus, final int... allowedStatuses) {
@@ -246,9 +246,11 @@ public class TransactionHelperImpl implements TransactionHelper {
     throw new IllegalStateException(sb.toString());
   }
 
-  private void throwWrappedIfNotRuntimeOrOriginal(final Exception e) {
+  private void throwOriginalIfUncheckedOrWrapped(final Throwable e) {
     if (e instanceof RuntimeException) {
       throw (RuntimeException) e;
+    } else if (e instanceof Error) {
+      throw (Error) e;
     }
     throw new TransactionalException(e);
   }
