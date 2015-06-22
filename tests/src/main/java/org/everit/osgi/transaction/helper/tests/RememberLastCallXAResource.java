@@ -1,18 +1,17 @@
-/**
- * This file is part of Everit - Transaction Helper Tests.
+/*
+ * Copyright (C) 2011 Everit Kft. (http://www.everit.org)
  *
- * Everit - Transaction Helper Tests is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Everit - Transaction Helper Tests is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *         http://www.apache.org/licenses/LICENSE-2.0
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Everit - Transaction Helper Tests.  If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.everit.osgi.transaction.helper.tests;
 
@@ -26,79 +25,79 @@ import javax.transaction.xa.Xid;
  */
 public class RememberLastCallXAResource implements XAResource {
 
-    /**
-     * The resource default statuses.
-     */
-    private static final int DEFAULT_STATUS = 100;
+  /**
+   * The resource default statuses.
+   */
+  private static final int DEFAULT_STATUS = 100;
 
-    /**
-     * The resource status.
-     */
-    private int status = DEFAULT_STATUS;
+  /**
+   * The resource status.
+   */
+  private int status = DEFAULT_STATUS;
 
-    private Xid xid = null;
+  private Xid xid = null;
 
-    @Override
-    public void commit(final Xid xid, final boolean onePhase) throws XAException {
-        status = Status.STATUS_COMMITTED;
-        this.xid = xid;
-    }
+  @Override
+  public void commit(final Xid xid, final boolean onePhase) throws XAException {
+    status = Status.STATUS_COMMITTED;
+    this.xid = xid;
+  }
 
-    @Override
-    public void end(final Xid xid, final int flags) throws XAException {
-        status = XAResourceStatus.STATUS_END;
-        this.xid = xid;
-    }
+  @Override
+  public void end(final Xid xid, final int flags) throws XAException {
+    status = XAResourceStatus.STATUS_END;
+    this.xid = xid;
+  }
 
-    @Override
-    public void forget(final Xid xid) throws XAException {
-        this.xid = xid;
-    }
+  @Override
+  public void forget(final Xid xid) throws XAException {
+    this.xid = xid;
+  }
 
-    public int getStatus() {
-        return status;
-    }
+  public int getStatus() {
+    return status;
+  }
 
-    @Override
-    public int getTransactionTimeout() throws XAException {
-        return 0;
-    }
+  @Override
+  public int getTransactionTimeout() throws XAException {
+    return 0;
+  }
 
-    public Xid getXid() {
-        return xid;
-    }
+  public Xid getXid() {
+    return xid;
+  }
 
-    @Override
-    public boolean isSameRM(final XAResource xares) throws XAException {
-        return xares == this;
-    }
+  @Override
+  public boolean isSameRM(final XAResource xares) throws XAException {
+    return xares == this;
+  }
 
-    @Override
-    public int prepare(final Xid xid) throws XAException {
-        status = Status.STATUS_PREPARING;
-        this.xid = xid;
-        return 0;
-    }
+  @Override
+  public int prepare(final Xid xid) throws XAException {
+    status = Status.STATUS_PREPARING;
+    this.xid = xid;
+    return 0;
+  }
 
-    @Override
-    public Xid[] recover(final int flag) throws XAException {
-        return new Xid[0];
-    }
+  @Override
+  public Xid[] recover(final int flag) throws XAException {
+    return new Xid[0];
+  }
 
-    @Override
-    public void rollback(final Xid xid) throws XAException {
-        status = Status.STATUS_ROLLEDBACK;
-        this.xid = xid;
-    }
+  @Override
+  public void rollback(final Xid xid) throws XAException {
+    status = Status.STATUS_ROLLEDBACK;
+    this.xid = xid;
+  }
 
-    @Override
-    public boolean setTransactionTimeout(final int seconds) throws XAException {
-        return true;
-    }
+  @Override
+  public boolean setTransactionTimeout(final int seconds) throws XAException {
+    return true;
+  }
 
-    @Override
-    public void start(final Xid xid, final int flags) throws XAException {
-        status = XAResourceStatus.STATUS_START;
-        this.xid = xid;
-    }
+  @Override
+  public void start(final Xid xid, final int flags) throws XAException {
+    status = XAResourceStatus.STATUS_START;
+    this.xid = xid;
+  }
 }

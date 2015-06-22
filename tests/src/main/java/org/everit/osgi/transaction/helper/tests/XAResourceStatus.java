@@ -1,18 +1,17 @@
-/**
- * This file is part of Everit - Transaction Helper Tests.
+/*
+ * Copyright (C) 2011 Everit Kft. (http://www.everit.org)
  *
- * Everit - Transaction Helper Tests is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Everit - Transaction Helper Tests is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *         http://www.apache.org/licenses/LICENSE-2.0
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Everit - Transaction Helper Tests.  If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.everit.osgi.transaction.helper.tests;
 
@@ -21,15 +20,18 @@ import javax.transaction.Status;
 /**
  * Extending javax.persistence.Status interface which contains the start and end status.
  */
-public interface XAResourceStatus extends Status {
+public final class XAResourceStatus implements Status {
 
-    /**
-     * The transaction is assigned resource and started.
-     */
-    int STATUS_START = 10;
+  /**
+   * The transaction is assigned resource and ended without any actions.
+   */
+  public static final int STATUS_END = 14;
 
-    /**
-     * The transaction is assigned resource and ended without any actions.
-     */
-    int STATUS_END = 14;
+  /**
+   * The transaction is assigned resource and started.
+   */
+  public static final int STATUS_START = 10;
+
+  private XAResourceStatus() {
+  }
 }
