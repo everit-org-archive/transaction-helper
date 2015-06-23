@@ -80,14 +80,16 @@ public class TransactionHelperImpl implements TransactionHelper {
       throw new TransactionalException(e);
     }
 
+    Throwable thrownDuringActionCall = null;
+    R result = null;
     try {
-      R result = callback.get();
-      resume(transaction, null);
-      return result;
+      result = callback.get();
     } catch (Throwable e) {
-      resume(transaction, e);
-      return null;
+      thrownDuringActionCall = e;
     }
+
+    resumeAndThrowIfOccured(transaction, thrownDuringActionCall);
+    return result;
   }
 
   private void forceTransactionStatus(final int allowedStatus) {
@@ -166,7 +168,8 @@ public class TransactionHelperImpl implements TransactionHelper {
     });
   }
 
-  private void resume(final Transaction transaction, final Throwable thrownThrowable) {
+  private void resumeAndThrowIfOccured(final Transaction transaction,
+      final Throwable thrownThrowable) {
     try {
       transactionManager.resume(transaction);
     } catch (Throwable e) {
@@ -175,6 +178,9 @@ public class TransactionHelperImpl implements TransactionHelper {
       } else {
         throwOriginalIfUncheckedOrWrapped(e);
       }
+    }
+    if (thrownThrowable != null) {
+      throwOriginalIfUncheckedOrWrapped(thrownThrowable);
     }
   }
 
