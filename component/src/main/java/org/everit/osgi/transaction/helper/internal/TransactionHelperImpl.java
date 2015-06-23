@@ -159,13 +159,7 @@ public class TransactionHelperImpl implements TransactionHelper {
     if (Status.STATUS_NO_TRANSACTION == status) {
       return doInNewTransaction(callback);
     }
-    return doInSuspended(new Supplier<R>() {
-
-      @Override
-      public R get() {
-        return doInNewTransaction(callback);
-      }
-    });
+    return doInSuspended(() -> doInNewTransaction(callback));
   }
 
   private void resumeAndThrowIfOccured(final Transaction transaction,

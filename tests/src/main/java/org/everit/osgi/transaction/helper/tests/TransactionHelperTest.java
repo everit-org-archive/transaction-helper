@@ -29,7 +29,6 @@ import org.apache.felix.scr.annotations.Properties;
 import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
-import org.everit.osgi.dev.testrunner.TestDuringDevelopment;
 import org.everit.osgi.transaction.helper.api.TransactionHelper;
 import org.everit.osgi.transaction.helper.api.TransactionalException;
 import org.junit.Assert;
@@ -47,7 +46,6 @@ import org.junit.runners.MethodSorters;
     @Property(name = "eosgi.testEngine", value = "junit4")
 })
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@TestDuringDevelopment
 public class TransactionHelperTest {
 
   /**
@@ -520,7 +518,6 @@ public class TransactionHelperTest {
   }
 
   @Test
-  @TestDuringDevelopment
   public void test25SuppressionDuringResume() {
     try {
       transactionHelper.required(() -> {
