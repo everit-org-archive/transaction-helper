@@ -1,6 +1,14 @@
 transaction-helper
 ==================
 
+## End of life
+
+This project is no longer maintained. The project is splitted into separate micro-projects:
+
+ - [transaction-propagator-api][1]: The API that contains the interface
+ - [transaction-propagator-jta][2]: The JTA based implementation of the API
+ - transaction-propagator-jta-ecm: Not yet implemented. This would be an OSGi component wrapper around the jta implementation of transaction-propagator
+
 ## Introduction
 
 Transaciton Helper is a OSGi-DS component that makes it simple to use
@@ -100,4 +108,5 @@ Is it so much to ask to use an anonymous class? There will be more code, but
 still the code will be much more clear! It will be yours. With Java 8, the
 code will be even more nice if you use lambda expressions.
 
-[![Analytics](https://ga-beacon.appspot.com/UA-15041869-4/everit-org/transaction-helper)](https://github.com/igrigorik/ga-beacon)
+[1]: https://github.com/everit-org/transaction-propagator-api
+[1]: https://github.com/everit-org/transaction-propagator-jta
