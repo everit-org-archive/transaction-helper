@@ -109,4 +109,4 @@ still the code will be much more clear! It will be yours. With Java 8, the
 code will be even more nice if you use lambda expressions.
 
 [1]: https://github.com/everit-org/transaction-propagator-api
-[1]: https://github.com/everit-org/transaction-propagator-jta
+[2]: https://github.com/everit-org/transaction-propagator-jta
